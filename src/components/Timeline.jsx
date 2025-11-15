@@ -1,23 +1,43 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import TimelineCard from "./TimelineCard.jsx";
 import TimelineIndicator from "./TimelineIndicator.jsx";
 import itineraryData from "../../data/itineraryData.js";
 import { format } from "date-fns";
 
-export default function Timeline({ selectedDay }) {
+export default function Timeline({ selectedDay, onActiveChange, onCompletedChange }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [completedUpTo, setCompletedUpTo] = useState(-1);
   const refs = useRef([]);
 
   // Get itinerary data for selected date
   const selectedDateStr = format(selectedDay, "yyyy-MM-dd");
-  const filteredData = itineraryData[selectedDateStr] || [];
+  const filteredData = useMemo(
+    () => itineraryData[selectedDateStr] || [],
+    [selectedDateStr],
+  );
 
   // Reset state when date changes
   useEffect(() => {
     setCurrentIndex(0);
     setCompletedUpTo(-1);
-  }, [selectedDateStr]);
+    if (onActiveChange) onActiveChange(null);
+  }, [selectedDateStr, onActiveChange]);
+
+  // notify parent when active index changes
+  useEffect(() => {
+    if (onActiveChange) {
+      const activeItem = filteredData[currentIndex] ?? null;
+      onActiveChange(activeItem);
+    }
+  }, [currentIndex, filteredData, onActiveChange]);
+
+  // notify parent when completedUpTo changes
+  useEffect(() => {
+    if (onCompletedChange) {
+      const completedCount = completedUpTo >= 0 ? completedUpTo + 1 : 0;
+      onCompletedChange(completedCount);
+    }
+  }, [completedUpTo, onCompletedChange]);
 
   refs.current = filteredData.map((_, i) => refs.current[i] ?? null);
 
@@ -70,7 +90,11 @@ export default function Timeline({ selectedDay }) {
                 <TimelineCard
                   {...it}
                   isActive={i === currentIndex}
-                  onClick={() => goTo(i)} // ⛔ now scroll only
+                  onClick={() => {
+                    setCurrentIndex(i);
+                    goTo(i);
+                    if (onActiveChange) onActiveChange(it);
+                  }}
                   onToggleDone={() => handleStepClick(i)} // ☑ only for a button inside card
                 />
               </div>
