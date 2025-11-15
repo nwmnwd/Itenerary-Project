@@ -1,6 +1,5 @@
-import itinerary from "../../data/itineraryData.js";
-
 export default function TimelineIndicator({
+  data,
   currentIndex,
   completedUpTo,
   onClick,
@@ -9,9 +8,9 @@ export default function TimelineIndicator({
   const btnCenterOffset = 26;
 
   const lineTop = btnCenterOffset;
-  const lineBottom = (itinerary.length - 1) * rowHeight + btnCenterOffset;
+  const lineBottom = (data.length - 1) * rowHeight + btnCenterOffset;
 
-  const totalHeight = itinerary.length * rowHeight + 24;
+  const totalHeight = data.length * rowHeight + 24;
 
   return (
     <div
@@ -44,7 +43,7 @@ export default function TimelineIndicator({
         )}
       </svg>
 
-      {itinerary.map((it, i) => (
+      {data.map((it, i) => (
         <div
           key={it.id}
           className="absolute z-10"

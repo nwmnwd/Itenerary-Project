@@ -3,7 +3,7 @@ import NotesInput from "./NotesInput";
 
 export default function TimelineCard({
   time,
-  title,
+  activity,
   location,
   isActive,
   onClick,
@@ -26,10 +26,12 @@ export default function TimelineCard({
         {/* CARD */}
         <div
           className={`rounded-md p-5 outline-1 -outline-offset-1 ${
-            isActive ? "outline-violet-400 bg-violet-50" : "outline-gray-300 bg-white"
+            isActive
+              ? "bg-violet-50 outline-violet-400"
+              : "bg-white outline-gray-300"
           }`}
         >
-          <h3 className="text-md font-semibold">{title}</h3>
+          <h3 className="text-md font-semibold">{activity}</h3>
 
           <div className="mt-2 mb-3 flex items-center gap-2">
             <PinIcon className="h-3 w-3 text-gray-400" />
