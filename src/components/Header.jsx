@@ -1,9 +1,12 @@
 import { PinIcon, Calendar } from "../assets/icons";
+import { format } from "date-fns";
 
 function Header() {
+  const today = new Date();
+  const formatted = format(today, "EEEE, MMMM yyyy");
   return (
     <>
-      <div className="w-full bg-[#65558F] px-8 pt-6 pb-6">
+      <div className="w-full bg-violet-500 px-8 pt-6 pb-6">
         <div className="mb-1 text-left text-xl font-semibold text-white">
           Arrival at Hotel
         </div>
@@ -17,17 +20,17 @@ function Header() {
           <div className="flex items-center gap-1">
             <Calendar className="h-2.5 w-2.5 text-white" />
             <div className="my-0 text-xs font-normal text-white">
-              Wednesday, December 2025
+              {formatted}
             </div>
           </div>
         </div>
         <div className="flex gap-4">
-          <div className="m-0 inline-flex items-center justify-center rounded-sm bg-[#222B59] px-4 py-1 text-sm leading-none text-white text-md font-normal">
+          <div className="text-md m-0 inline-flex items-center justify-center rounded-sm bg-violet-900 px-4 py-1 text-sm leading-none font-normal text-white">
             Day 1
           </div>
-          <div className="rounded-sm bg-amber-50 px-4 py-1 text-black text-md font-normal">
+          <div className="text-md rounded-sm bg-amber-50 px-4 py-1 font-normal text-black">
             1/10 complited
-          </div> 
+          </div>
         </div>
       </div>
     </>
