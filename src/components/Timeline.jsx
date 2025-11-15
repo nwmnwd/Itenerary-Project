@@ -50,7 +50,7 @@ export default function Timeline() {
                 title={it.activity}
                 location={it.location}
                 isActive={i === currentIndex}
-                onClick={() => handleStepClick(i)}
+                onClick={() => goTo(i)}
               />
             </div>
           ))}
