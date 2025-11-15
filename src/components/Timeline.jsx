@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import TimelineCard from "./TimelineCard.jsx";
 import TimelineIndicator from "./TimelineIndicator.jsx";
-import itinerary from "../../data/itineraries.js";
+import itinerary from "../../data/itineraryData.js";
 
 export default function Timeline() {
   const [currentIndex, setCurrentIndex] = useState(0);

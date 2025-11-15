@@ -15,11 +15,9 @@ function classNames(...classes) {
   return classes.filter(Boolean).join(" ");
 }
 
-export default function WeeklyCalendar() {
+export default function WeeklyCalendar({ selectedDay, onSelectDay }) {
   let today = startOfToday();
 
-  // tanggal yang dipilih
-  let [selectedDay, setSelectedDay] = useState(today);
 
   // awal minggu yang sedang ditampilkan
   let [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(today));
@@ -93,7 +91,7 @@ export default function WeeklyCalendar() {
             >
               <button
                 type="button"
-                onClick={() => setSelectedDay(day.date)}
+                onClick={() => onSelectDay(day.date)}
                 className={classNames(
                   isEqual(day.date, selectedDay) && "bg-gray-900 text-white",
                   !isEqual(day.date, selectedDay) &&

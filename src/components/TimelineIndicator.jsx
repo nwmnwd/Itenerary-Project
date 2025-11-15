@@ -1,4 +1,4 @@
-import itinerary from "../../data/itineraries.js";
+import itinerary from "../../data/itineraryData.js";
 
 export default function TimelineIndicator({
   currentIndex,
