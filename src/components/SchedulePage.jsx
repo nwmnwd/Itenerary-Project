@@ -12,6 +12,7 @@ export default function SchedulePage() {
   const [selectedDay, setSelectedDay] = useState(() => startOfDay(new Date()));
   const [currentActivity, setCurrentActivity] = useState(null);
   const [completedCount, setCompletedCount] = useState(0);
+  const [todayCurrentActivity, setTodayCurrentActivity] = useState(null);
 
   useEffect(() => {
     // clear activity when date changes
@@ -19,44 +20,58 @@ export default function SchedulePage() {
     setCompletedCount(0);
   }, [selectedDay]);
 
-  const selectedDateStr = useMemo(() => format(selectedDay, "yyyy-MM-dd"), [selectedDay]);
+  useEffect(() => {
+    // track today's current activity separately
+    const todayDate = startOfDay(new Date());
+    if (selectedDay.getTime() === todayDate.getTime()) {
+      setTodayCurrentActivity(currentActivity);
+    }
+  }, [currentActivity, selectedDay]);
 
-  const totalItems = useMemo(() => (itineraryData[selectedDateStr] || []).length, [selectedDateStr]);
+  // first activity for today (always shown in header title)
+  const todayDateStr = useMemo(
+    () => format(startOfDay(new Date()), "yyyy-MM-dd"),
+    [],
+  );
+  const todayFirstActivity = useMemo(() => {
+    const list = itineraryData[todayDateStr] || [];
+    return list.length > 0 ? list[0] : null;
+  }, [todayDateStr]);
 
-  const dayNumber = useMemo(() => {
+  // today's day number and total items
+  const todayDayNumber = useMemo(() => {
     const dates = Object.keys(itineraryData).sort();
     if (dates.length === 0) return 1;
     const first = dates[0];
     try {
-      const diff = differenceInCalendarDays(parseISO(selectedDateStr), parseISO(first));
+      const diff = differenceInCalendarDays(
+        parseISO(todayDateStr),
+        parseISO(first),
+      );
       return diff >= 0 ? diff + 1 : 1;
     } catch {
       return 1;
     }
-  }, [selectedDateStr]);
+  }, [todayDateStr]);
 
-  // first activity for this date (used as header default when nothing selected)
-  const firstActivity = useMemo(() => {
-    const list = itineraryData[selectedDateStr] || [];
-    return list.length > 0 ? list[0] : null;
-  }, [selectedDateStr]);
+  const todayTotalItems = useMemo(
+    () => (itineraryData[todayDateStr] || []).length,
+    [todayDateStr],
+  );
 
   return (
     <div className="flex h-screen flex-col">
       {/* Top area: stays visible */}
       <div className="sticky top-0 z-30 bg-white">
         <Header
-          currentActivity={currentActivity ?? firstActivity}
+          todayCurrentActivity={todayCurrentActivity ?? todayFirstActivity}
           completedCount={completedCount}
-          totalItems={totalItems}
-          dayNumber={dayNumber}
+          totalItems={todayTotalItems}
+          dayNumber={todayDayNumber}
         />
         <div className="bg-white">
           <div className="mx-4 mt-4">
-            <Calendar
-              selectedDay={selectedDay}
-              onSelectDay={setSelectedDay}
-            />
+            <Calendar selectedDay={selectedDay} onSelectDay={setSelectedDay} />
             <SearchBox />
           </div>
         </div>

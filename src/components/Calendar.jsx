@@ -15,9 +15,8 @@ function classNames(...classes) {
   return classes.filter(Boolean).join(" ");
 }
 
-export default function WeeklyCalendar({ selectedDay, onSelectDay }) {
+export default function Calendar({ selectedDay, onSelectDay }) {
   let today = startOfToday();
-
 
   // awal minggu yang sedang ditampilkan
   let [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(today));

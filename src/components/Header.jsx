@@ -1,13 +1,18 @@
 import { PinIcon, Calendar } from "../assets/icons";
 import { format } from "date-fns";
 
-function Header({ currentActivity, completedCount = 0, totalItems = 0, dayNumber = 1 }) {
+function Header({
+  todayCurrentActivity,
+  completedCount = 0,
+  totalItems = 0,
+  dayNumber = 1,
+}) {
   const today = new Date();
   const formatted = format(today, "EEEE, MMMM yyyy");
 
-  const title = currentActivity?.activity || "Arrival at Hotel";
-  const location = currentActivity?.location || "Natural View";
-  const time = currentActivity?.time || null;
+  const title = todayCurrentActivity?.activity || "No schedule";
+  const location = todayCurrentActivity?.location || "";
+  const time = todayCurrentActivity?.time || null;
 
   return (
     <>

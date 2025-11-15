@@ -4,7 +4,11 @@ import TimelineIndicator from "./TimelineIndicator.jsx";
 import itineraryData from "../../data/itineraryData.js";
 import { format } from "date-fns";
 
-export default function Timeline({ selectedDay, onActiveChange, onCompletedChange }) {
+export default function Timeline({
+  selectedDay,
+  onActiveChange,
+  onCompletedChange,
+}) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [completedUpTo, setCompletedUpTo] = useState(-1);
   const refs = useRef([]);
