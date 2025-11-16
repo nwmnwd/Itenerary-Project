@@ -4,7 +4,7 @@ export default function TimelineIndicator({
   completedUpTo,
   onClick,
 }) {
-  const rowHeight = 260;
+  const rowHeight = 240;
   const btnCenterOffset = 26;
 
   const lineTop = btnCenterOffset;

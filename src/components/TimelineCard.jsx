@@ -11,7 +11,7 @@ export default function TimelineCard({
   return (
     <div
       className="itinerary-start flex gap-3"
-      style={{ minHeight: "260px" }}
+      style={{ minHeight: "240px" }}
       onClick={onClick}
     >
       <div className="flex-1">

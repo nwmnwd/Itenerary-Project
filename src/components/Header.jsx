@@ -39,7 +39,7 @@ function Header({
           <div className="text-md m-0 inline-flex items-center justify-center rounded-sm bg-violet-900 px-4 py-1 text-sm leading-none font-normal text-white">
             Day {dayNumber}
           </div>
-          <div className="text-md rounded-sm bg-amber-50 px-4 py-1 font-normal text-black">
+          <div className="text-md rounded-sm bg-amber-50 px-4 py-1 font-normal text-violet-800">
             {completedCount}/{totalItems} completed
           </div>
         </div>

@@ -14,8 +14,6 @@ export default function SchedulePage() {
   const [completedCount, setCompletedCount] = useState(0);
   const [todayCurrentActivity, setTodayCurrentActivity] = useState(null);
 
-  
-
   useEffect(() => {
     // track today's current activity separately
     const todayDate = startOfDay(new Date());
@@ -56,24 +54,24 @@ export default function SchedulePage() {
   );
 
   return (
-    <div className="flex h-screen flex-col">
-      {/* Top area: stays visible */}
-      <div className="sticky top-0 z-30 bg-white">
-        <Header
-          todayCurrentActivity={todayCurrentActivity ?? todayFirstActivity}
-          completedCount={completedCount}
-          totalItems={todayTotalItems}
-          dayNumber={todayDayNumber}
-        />
-        <div className="bg-white">
-          <div className="mx-2 mt-4">
-            <Calendar selectedDay={selectedDay} onSelectDay={setSelectedDay} />
-            <SearchBox />
-          </div>
+    <div className="flex min-h-screen flex-col">
+      {/* Header - tidak scroll */}
+      <Header
+        todayCurrentActivity={todayCurrentActivity ?? todayFirstActivity}
+        completedCount={completedCount}
+        totalItems={todayTotalItems}
+        dayNumber={todayDayNumber}
+      />
+
+      {/* Calendar + SearchBox sticky */}
+      <div className="sticky top-0 z-30 bg-white pb-2">
+        <div className="mx-2 mt-4">
+          <Calendar selectedDay={selectedDay} onSelectDay={setSelectedDay} />
+          <SearchBox />
         </div>
       </div>
 
-      {/* Scrollable timeline */}
+      {/* HANYA TIMELINE yang scroll */}
       <main className="flex-1 overflow-y-auto">
         <Timeline
           selectedDay={selectedDay}
