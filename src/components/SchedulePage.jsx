@@ -14,11 +14,7 @@ export default function SchedulePage() {
   const [completedCount, setCompletedCount] = useState(0);
   const [todayCurrentActivity, setTodayCurrentActivity] = useState(null);
 
-  useEffect(() => {
-    // clear activity when date changes
-    setCurrentActivity(null);
-    setCompletedCount(0);
-  }, [selectedDay]);
+  
 
   useEffect(() => {
     // track today's current activity separately

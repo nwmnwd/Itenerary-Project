@@ -2,75 +2,134 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import TimelineCard from "./TimelineCard.jsx";
 import TimelineIndicator from "./TimelineIndicator.jsx";
 import itineraryData from "../../data/itineraryData.js";
-import { format } from "date-fns";
+import { format, startOfDay } from "date-fns";
 
-export default function Timeline({
-  selectedDay,
-  onActiveChange,
-  onCompletedChange,
-}) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [completedUpTo, setCompletedUpTo] = useState(-1);
-  const refs = useRef([]);
+const STORAGE_KEY = "timeline_state";
 
-  // Get itinerary data for selected date
+export default function Timeline({ selectedDay, onActiveChange, onCompletedChange }) {
+  const todayStr = format(startOfDay(new Date()), "yyyy-MM-dd");
   const selectedDateStr = format(selectedDay, "yyyy-MM-dd");
-  const filteredData = useMemo(
-    () => itineraryData[selectedDateStr] || [],
-    [selectedDateStr],
-  );
 
-  // Reset state when date changes
-  useEffect(() => {
-    setCurrentIndex(0);
-    setCompletedUpTo(-1);
-    if (onActiveChange) onActiveChange(null);
-  }, [selectedDateStr, onActiveChange]);
+  // ---------------------------
+  // State per tanggal
+  // ---------------------------
+  const [timelineState, setTimelineState] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : {};
+  });
 
-  // notify parent when active index changes
+  const getDateState = (dateStr) =>
+    timelineState[dateStr] || { currentIndex: 0, completedUpTo: -1 };
+
+  const updateDateState = (dateStr, newState) =>
+    setTimelineState((prev) => {
+      const updated = {
+        ...prev,
+        [dateStr]: {
+          ...getDateState(dateStr),
+          ...newState,
+        },
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      return updated;
+    });
+
+  const { currentIndex, completedUpTo } = getDateState(selectedDateStr);
+  const refs = useRef([]);
+  const lastDateRef = useRef(null);
+
+  // ---------------------------
+  // Auto scroll per tanggal
+  // ---------------------------
   useEffect(() => {
-    if (onActiveChange) {
-      const activeItem = filteredData[currentIndex] ?? null;
-      onActiveChange(activeItem);
+    const isToday = selectedDateStr === todayStr;
+
+    // Tanggal berubah
+    if (lastDateRef.current !== selectedDateStr) {
+      lastDateRef.current = selectedDateStr;
+
+      // Reset state untuk tanggal baru (selain hari ini)
+      if (!isToday) {
+        updateDateState(selectedDateStr, { currentIndex: 0, completedUpTo: -1 });
+
+        requestAnimationFrame(() => {
+          refs.current[0]?.scrollIntoView({ behavior: "auto", block: "center" });
+        });
+      } else {
+        requestAnimationFrame(() => {
+          refs.current[currentIndex]?.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+      }
+      return;
     }
-  }, [currentIndex, filteredData, onActiveChange]);
 
-  // notify parent when completedUpTo changes
-  useEffect(() => {
-    if (onCompletedChange) {
-      const completedCount = completedUpTo >= 0 ? completedUpTo + 1 : 0;
-      onCompletedChange(completedCount);
-    }
-  }, [completedUpTo, onCompletedChange]);
-
-  refs.current = filteredData.map((_, i) => refs.current[i] ?? null);
-
-  function goTo(i) {
-    const el = refs.current[i];
-    if (el?.scrollIntoView) {
-      el.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-        inline: "nearest",
+    // Jika hari ini → scroll otomatis ke currentIndex
+    if (isToday) {
+      requestAnimationFrame(() => {
+        refs.current[currentIndex]?.scrollIntoView({ behavior: "smooth", block: "center" });
       });
     }
-  }
+  }, [selectedDateStr, todayStr, currentIndex]);
 
-  function handleStepClick(i) {
-    // Normal logic
+  // ---------------------------
+  // Filter data per tanggal
+  // ---------------------------
+  const filteredData = useMemo(
+    () => itineraryData[selectedDateStr] || [],
+    [selectedDateStr]
+  );
+
+  // ---------------------------
+  // Notify parent
+  // ---------------------------
+  useEffect(() => {
+    onActiveChange?.(filteredData[currentIndex] ?? null);
+  }, [currentIndex, filteredData, onActiveChange]);
+
+  useEffect(() => {
+    // Hitung completedUpTo hanya untuk hari ini
+    if (selectedDateStr === todayStr) {
+      onCompletedChange?.(completedUpTo >= 0 ? completedUpTo + 1 : 0);
+    }
+  }, [completedUpTo, selectedDateStr, todayStr, onCompletedChange]);
+
+  // Update refs
+  refs.current = filteredData.map((_, i) => refs.current[i] ?? null);
+
+  // ---------------------------
+  // Scroll helper
+  // ---------------------------
+  const goTo = (i) => {
+    const el = refs.current[i];
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
+  // ---------------------------
+  // Step click logic
+  // ---------------------------
+  const handleStepClick = (i) => {
+    const isToday = selectedDateStr === todayStr;
+
     if (i <= completedUpTo) {
-      setCurrentIndex(i);
-      setCompletedUpTo(i - 1);
+      updateDateState(selectedDateStr, {
+        currentIndex: i,
+        ...(isToday ? { completedUpTo: i - 1 } : {}),
+      });
       goTo(i);
       return;
     }
 
-    setCompletedUpTo((prev) => Math.max(prev, i));
     const next = Math.min(i + 1, filteredData.length - 1);
-    setCurrentIndex(next);
+    updateDateState(selectedDateStr, {
+      currentIndex: next,
+      ...(isToday ? { completedUpTo: Math.max(completedUpTo, i) } : {}),
+    });
     goTo(next);
-  }
+  };
 
+  // ---------------------------
+  // Render
+  // ---------------------------
   return (
     <div className="mx-8 mt-5 mb-8">
       {filteredData.length === 0 ? (
@@ -79,15 +138,12 @@ export default function Timeline({
         </div>
       ) : (
         <div className="relative flex gap-4">
-          {/* Left indicator (progress / done) */}
           <TimelineIndicator
             data={filteredData}
             currentIndex={currentIndex}
             completedUpTo={completedUpTo}
             onClick={handleStepClick}
           />
-
-          {/* Right cards */}
           <div className="flex flex-1 flex-col gap-0">
             {filteredData.map((it, i) => (
               <div ref={(el) => (refs.current[i] = el)} key={it.id}>
@@ -95,11 +151,11 @@ export default function Timeline({
                   {...it}
                   isActive={i === currentIndex}
                   onClick={() => {
-                    setCurrentIndex(i);
+                    updateDateState(selectedDateStr, { currentIndex: i });
                     goTo(i);
-                    if (onActiveChange) onActiveChange(it);
+                    onActiveChange?.(it);
                   }}
-                  onToggleDone={() => handleStepClick(i)} // ☑ only for a button inside card
+                  onToggleDone={() => handleStepClick(i)}
                 />
               </div>
             ))}

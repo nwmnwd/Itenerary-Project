@@ -90,7 +90,11 @@ export default function Calendar({ selectedDay, onSelectDay }) {
             >
               <button
                 type="button"
-                onClick={() => onSelectDay(day.date)}
+                onClick={() => {
+                  if (!isEqual(day.date, selectedDay)) {
+                    onSelectDay(day.date);
+                  }
+                }}
                 className={classNames(
                   isEqual(day.date, selectedDay) && "bg-gray-900 text-white",
                   !isEqual(day.date, selectedDay) &&
