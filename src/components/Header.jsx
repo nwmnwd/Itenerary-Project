@@ -16,7 +16,7 @@ function Header({
 
   return (
     <>
-      <div className="w-full bg-violet-500 px-8 pb-6">
+      <div className="w-full bg-violet-500 px-8 pt-6 pb-6">
         <div className="mb-1 text-left text-xl font-semibold text-white">
           {title}
         </div>
