@@ -66,7 +66,7 @@ export default function SchedulePage() {
           dayNumber={todayDayNumber}
         />
         <div className="bg-white">
-          <div className="mx-4 mt-4">
+          <div className="mx-2 mt-4">
             <Calendar selectedDay={selectedDay} onSelectDay={setSelectedDay} />
             <SearchBox />
           </div>

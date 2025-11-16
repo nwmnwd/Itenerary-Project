@@ -2,7 +2,7 @@ import { Search } from "../assets/icons";
 function SearchBox() {
   return (
     <>
-      <div className="mx-8 mt-5">
+      <div className="mx-5 mt-5">
         <div className="flex items-center rounded-4xl bg-white pl-3 outline-1 -outline-offset-1 outline-gray-300 has-[input:focus-within]:outline-2 has-[input:focus-within]:-outline-offset-2 has-[input:focus-within]:outline-indigo-600">
           <Search className="h-4 w-4 text-gray-400" />
           <input

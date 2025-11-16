@@ -44,8 +44,8 @@ export default function Calendar({ selectedDay, onSelectDay }) {
     monthStart === monthEnd ? monthStart : `${monthStart} - ${monthEnd}`;
 
   return (
-    <div className="pt-8">
-      <div className="mx-auto max-w-4xl px-2">
+    <div className="pt-5">
+      <div className="mx-auto max-w-4xl">
         {/* Header */}
         <div className="flex items-center px-6">
           <h2 className="flex-auto font-semibold text-gray-900">
