@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Calendar from "./Calendar";
 import Timeline from "./Timeline";
 import Header from "./Header";
 import SearchBox from "./SearchBox";
 import { startOfDay } from "date-fns";
-import { useMemo } from "react";
+
 import itineraryData from "../../data/itineraryData.js";
 import { parseISO, differenceInCalendarDays, format } from "date-fns";
 
@@ -14,19 +14,25 @@ export default function SchedulePage() {
   const [completedCount, setCompletedCount] = useState(0);
   const [todayCurrentActivity, setTodayCurrentActivity] = useState(null);
 
+  const selectedDayRef = useRef(selectedDay);
+  useEffect(() => {
+    selectedDayRef.current = selectedDay;
+  }, [selectedDay]);
+
   useEffect(() => {
     // track today's current activity separately
     const todayDate = startOfDay(new Date());
-    if (selectedDay.getTime() === todayDate.getTime()) {
+
+    if (selectedDayRef.current.getTime() === todayDate.getTime()) {
       setTodayCurrentActivity(currentActivity);
     }
-  }, [currentActivity, selectedDay]);
+  }, [currentActivity]);
 
   // first activity for today (always shown in header title)
-  const todayDateStr = useMemo(
-    () => format(startOfDay(new Date()), "yyyy-MM-dd"),
-    [],
+  const [todayDateStr] = useState(() =>
+    format(startOfDay(new Date()), "yyyy-MM-dd"),
   );
+
   const todayFirstActivity = useMemo(() => {
     const list = itineraryData[todayDateStr] || [];
     return list.length > 0 ? list[0] : null;
@@ -56,8 +62,9 @@ export default function SchedulePage() {
   return (
     <div className="flex min-h-screen flex-col">
       {/* Header - tidak scroll */}
+
       <Header
-        todayCurrentActivity={todayCurrentActivity ?? todayFirstActivity}
+        todayCurrentActivity={todayCurrentActivity || todayFirstActivity}
         completedCount={completedCount}
         totalItems={todayTotalItems}
         dayNumber={todayDayNumber}

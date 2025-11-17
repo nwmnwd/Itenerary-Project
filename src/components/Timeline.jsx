@@ -6,7 +6,11 @@ import { format, startOfDay } from "date-fns";
 
 const STORAGE_KEY = "timeline_state";
 
-export default function Timeline({ selectedDay, onActiveChange, onCompletedChange }) {
+export default function Timeline({
+  selectedDay,
+  onActiveChange,
+  onCompletedChange,
+}) {
   const todayStr = format(startOfDay(new Date()), "yyyy-MM-dd");
   const selectedDateStr = format(selectedDay, "yyyy-MM-dd");
 
@@ -50,14 +54,20 @@ export default function Timeline({ selectedDay, onActiveChange, onCompletedChang
 
       // Reset state untuk tanggal baru (selain hari ini)
       if (!isToday) {
-        updateDateState(selectedDateStr, { currentIndex: 0, completedUpTo: -1 });
+        updateDateState(selectedDateStr, {
+          currentIndex: 0,
+          completedUpTo: -1,
+        });
 
         requestAnimationFrame(() => {
-          refs.current[0]?.scrollIntoView({ behavior: "auto", block: "center" });
+          refs.current[0]?.scrollIntoView({ behavior: "auto", block: "end" });
         });
       } else {
         requestAnimationFrame(() => {
-          refs.current[currentIndex]?.scrollIntoView({ behavior: "smooth", block: "center" });
+          refs.current[currentIndex]?.scrollIntoView({
+            behavior: "smooth",
+            block: "end",
+          });
         });
       }
       return;
@@ -66,9 +76,13 @@ export default function Timeline({ selectedDay, onActiveChange, onCompletedChang
     // Jika hari ini → scroll otomatis ke currentIndex
     if (isToday) {
       requestAnimationFrame(() => {
-        refs.current[currentIndex]?.scrollIntoView({ behavior: "smooth", block: "center" });
+        refs.current[currentIndex]?.scrollIntoView({
+          behavior: "smooth",
+          block: "end",
+        });
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDateStr, todayStr, currentIndex]);
 
   // ---------------------------
@@ -76,7 +90,7 @@ export default function Timeline({ selectedDay, onActiveChange, onCompletedChang
   // ---------------------------
   const filteredData = useMemo(
     () => itineraryData[selectedDateStr] || [],
-    [selectedDateStr]
+    [selectedDateStr],
   );
 
   // ---------------------------
