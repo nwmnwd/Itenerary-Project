@@ -51,25 +51,26 @@ export default function TimelineCard({
         {!isEditing ? time : ""}
       </div>
 
-      {/* Background Delete Layer */}
-      <div
-        className={`absolute top-9 right-0 z-0 flex h-32 w-26 items-center justify-center rounded-md bg-violet-700 text-white transition-opacity duration-100 ${
-          isSwiped ? "opacity-100" : "pointer-events-none opacity-0"
-        }`}
-        onClick={onDelete}
-      >
-        <DeleteIcon className="h-6 w-6" />
-      </div>
+      {/* Card wrapper with delete button */}
+      <div className="relative">
+        {/* Background Delete Layer */}
+        <div
+          className={`absolute top-0 right-0 z-0 flex h-full w-26 items-center justify-center rounded-md bg-red-500 text-white transition-opacity duration-300 ${
+            isSwiped ? "opacity-100" : "pointer-events-none opacity-0"
+          }`}
+          onClick={onDelete}
+        >
+          <DeleteIcon className="h-6 w-6" />
+        </div>
 
-
-      <div
-        className={`group relative z-10 rounded-md p-4 outline-1 -outline-offset-1 transition-transform duration-300 ${
-          isActive
-            ? "bg-violet-50 outline-violet-400"
-            : "bg-white outline-gray-300"
-        } ${isSwiped ? "-translate-x-24" : "translate-x-0"} `}
-        {...(!isEditing ? handlers : {})}
-      >
+        <div
+          className={`group relative z-10 rounded-md p-4 outline-1 -outline-offset-1 transition-transform duration-300 ${
+            isActive
+              ? "bg-violet-50 outline-violet-400"
+              : "bg-white outline-gray-300"
+          } ${isSwiped ? "-translate-x-24" : "translate-x-0"} `}
+          {...(!isEditing ? handlers : {})}
+        >
         {/* Edit button */}
         {!isEditing && (
           <div className="absolute top-5 right-4 flex gap-2 transition-opacity duration-200">
@@ -94,8 +95,16 @@ export default function TimelineCard({
               isEditing={isEditing}
               autoFocus={true}
             />
-            <InputLocation value={newLocation} onChange={setNewLocation} />
-            <InputTime value={newTime} onChange={setNewTime} />
+            <InputLocation 
+              value={newLocation} 
+              onChange={setNewLocation}
+              isEditing={isEditing}
+            />
+            <InputTime 
+              value={newTime} 
+              onChange={setNewTime}
+              isEditing={isEditing}
+            />
 
             <div className="mt-2 flex justify-end gap-2">
               <button
@@ -137,6 +146,7 @@ export default function TimelineCard({
             <NotesInput />
           </>
         )}
+      </div>
       </div>
     </div>
   );
