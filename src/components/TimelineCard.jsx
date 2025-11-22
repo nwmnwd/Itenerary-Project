@@ -53,7 +53,7 @@ export default function TimelineCard({
 
       {/* Background Delete Layer */}
       <div
-        className={`absolute top-0 right-0 z-0 flex h-full w-28 items-center justify-center rounded-md bg-red-500 text-white transition-opacity duration-200 ${
+        className={`absolute top-9 right-0 z-0 flex h-32 w-26 items-center justify-center rounded-md bg-violet-700 text-white transition-opacity duration-100 ${
           isSwiped ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
         onClick={onDelete}
@@ -61,15 +61,14 @@ export default function TimelineCard({
         <DeleteIcon className="h-6 w-6" />
       </div>
 
-      {/* Foreground Card with Swipe Handler */}
-      {/* Foreground Card with Conditional Swipe */}
+
       <div
         className={`group relative z-10 rounded-md p-4 outline-1 -outline-offset-1 transition-transform duration-300 ${
           isActive
             ? "bg-violet-50 outline-violet-400"
             : "bg-white outline-gray-300"
         } ${isSwiped ? "-translate-x-24" : "translate-x-0"} `}
-        {...(!isEditing ? handlers : {})} // swipe hanya saat NOT editing
+        {...(!isEditing ? handlers : {})}
       >
         {/* Edit button */}
         {!isEditing && (
