@@ -51,7 +51,7 @@ export default function TimelineIndicator({
   // Fallback positions jika belum ter-update
   const displayPos = positions.length === data.length 
     ? positions 
-    : data.map((_, i) => i * 240 + 20);
+    : data.map((_, i) => i * 180 + 20);
 
   const lineTop = displayPos[0];
   const lineBottom = displayPos[displayPos.length - 1];
