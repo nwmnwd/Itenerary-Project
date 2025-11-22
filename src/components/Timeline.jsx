@@ -1,7 +1,6 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect } from "react";
 import TimelineCard from "./TimelineCard.jsx";
 import TimelineIndicator from "./TimelineIndicator.jsx";
-import itineraryData from "../../data/itineraryData.js";
 import { format, startOfDay } from "date-fns";
 
 const STORAGE_KEY = "timeline_state";
@@ -10,13 +9,35 @@ export default function Timeline({
   selectedDay,
   onActiveChange,
   onCompletedChange,
+  itineraryData,
+  setItineraryData,
 }) {
   const todayStr = format(startOfDay(new Date()), "yyyy-MM-dd");
   const selectedDateStr = format(selectedDay, "yyyy-MM-dd");
 
-  // ---------------------------
-  // State per tanggal
-  // ---------------------------
+  useEffect(() => {
+    setItineraryData((prev) => {
+      if (prev[selectedDateStr]) return prev;
+      return { ...prev, [selectedDateStr]: [] };
+    });
+  }, [selectedDateStr, setItineraryData]);
+
+  const addItem = (dateStr) => {
+    setItineraryData((prev) => ({
+      ...prev,
+      [dateStr]: [
+        ...(prev[dateStr] || []),
+        {
+          id: crypto.randomUUID(),
+          time: "00:00",
+          activity: "New Activity",
+          location: "Unknown",
+          isNew: true,
+        },
+      ],
+    }));
+  };
+
   const [timelineState, setTimelineState] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     return saved ? JSON.parse(saved) : {};
@@ -39,20 +60,16 @@ export default function Timeline({
     });
 
   const { currentIndex, completedUpTo } = getDateState(selectedDateStr);
+
   const refs = useRef([]);
   const lastDateRef = useRef(null);
 
-  // ---------------------------
-  // Auto scroll per tanggal
-  // ---------------------------
   useEffect(() => {
     const isToday = selectedDateStr === todayStr;
 
-    // Tanggal berubah
     if (lastDateRef.current !== selectedDateStr) {
       lastDateRef.current = selectedDateStr;
 
-      // Reset state untuk tanggal baru (selain hari ini)
       if (!isToday) {
         updateDateState(selectedDateStr, {
           currentIndex: 0,
@@ -60,67 +77,62 @@ export default function Timeline({
         });
 
         requestAnimationFrame(() => {
+          onActiveChange?.(filteredData[0]);
           refs.current[0]?.scrollIntoView({ behavior: "auto", block: "end" });
         });
       } else {
         requestAnimationFrame(() => {
+          onActiveChange?.(filteredData[currentIndex]);
           refs.current[currentIndex]?.scrollIntoView({
             behavior: "smooth",
             block: "end",
           });
         });
       }
+
       return;
     }
 
-    // Jika hari ini → scroll otomatis ke currentIndex
     if (isToday) {
       requestAnimationFrame(() => {
+        onActiveChange?.(filteredData[currentIndex]); // ← FIX
         refs.current[currentIndex]?.scrollIntoView({
           behavior: "smooth",
           block: "end",
         });
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDateStr, todayStr, currentIndex]);
 
-  // ---------------------------
-  // Filter data per tanggal
-  // ---------------------------
-  const filteredData = useMemo(
-    () => itineraryData[selectedDateStr] || [],
-    [selectedDateStr],
-  );
+  const filteredData = itineraryData[selectedDateStr] || [];
 
-  // ---------------------------
-  // Notify parent
-  // ---------------------------
-  useEffect(() => {
-    onActiveChange?.(filteredData[currentIndex] ?? null);
-  }, [currentIndex, filteredData, onActiveChange]);
+  const editItem = (dateStr, id, newFields) => {
+    setItineraryData((prev) => ({
+      ...prev,
+      [dateStr]: prev[dateStr].map((item) =>
+        item.id === id ? { ...item, ...newFields } : item,
+      ),
+    }));
+  };
+
+  const deleteItem = (dateStr, id) =>
+    setItineraryData((prev) => ({
+      ...prev,
+      [dateStr]: prev[dateStr].filter((item) => item.id !== id),
+    }));
 
   useEffect(() => {
-    // Hitung completedUpTo hanya untuk hari ini
     if (selectedDateStr === todayStr) {
       onCompletedChange?.(completedUpTo >= 0 ? completedUpTo + 1 : 0);
     }
-  }, [completedUpTo, selectedDateStr, todayStr, onCompletedChange]);
+  }, [completedUpTo, selectedDateStr, todayStr]);
 
-  // Update refs
   refs.current = filteredData.map((_, i) => refs.current[i] ?? null);
 
-  // ---------------------------
-  // Scroll helper
-  // ---------------------------
   const goTo = (i) => {
-    const el = refs.current[i];
-    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    refs.current[i]?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
-  // ---------------------------
-  // Step click logic
-  // ---------------------------
   const handleStepClick = (i) => {
     const isToday = selectedDateStr === todayStr;
 
@@ -129,53 +141,65 @@ export default function Timeline({
         currentIndex: i,
         ...(isToday ? { completedUpTo: i - 1 } : {}),
       });
-      goTo(i);
-      return;
+    } else {
+      const next = Math.min(i + 1, filteredData.length - 1);
+      updateDateState(selectedDateStr, {
+        currentIndex: next,
+        ...(isToday ? { completedUpTo: Math.max(completedUpTo, i) } : {}),
+      });
     }
+    onActiveChange?.(filteredData[i]);
 
-    const next = Math.min(i + 1, filteredData.length - 1);
-    updateDateState(selectedDateStr, {
-      currentIndex: next,
-      ...(isToday ? { completedUpTo: Math.max(completedUpTo, i) } : {}),
-    });
-    goTo(next);
+    goTo(i);
   };
 
-  // ---------------------------
-  // Render
-  // ---------------------------
+  const [positions, setPositions] = useState({});
+
+  const handlePosition = (id, pos) => {
+    setPositions((prev) => ({ ...prev, [id]: pos }));
+  };
+
   return (
     <div className="mx-8 mt-5 mb-8">
-      {filteredData.length === 0 ? (
-        <div className="flex items-center justify-center py-16">
-          <p className="text-lg font-semibold text-gray-500">No schedule</p>
+      <div className="relative flex gap-4">
+        <TimelineIndicator
+          data={filteredData}
+          currentIndex={currentIndex}
+          completedUpTo={completedUpTo}
+          positions={positions}
+          onClick={handleStepClick}
+        />
+
+        <div className="flex flex-1 flex-col gap-4">
+          {filteredData.map((item, i) => (
+            <div ref={(el) => (refs.current[i] = el)} key={item.id}>
+              <TimelineCard
+                {...item}
+                onPositionChange={(pos) => handlePosition(item.id, pos)}
+                isNew={item.isNew}
+                isActive={i === currentIndex}
+                onClick={() => {
+                  updateDateState(selectedDateStr, { currentIndex: i });
+
+                  // 🔥 FIX — update current active item
+                  onActiveChange?.(filteredData[i]);
+
+                  goTo(i);
+                }}
+                onEdit={(fields) => editItem(selectedDateStr, item.id, fields)}
+                onDelete={() => deleteItem(selectedDateStr, item.id)}
+              />
+            </div>
+          ))}
+
+          <button
+            className="w-full rounded-md bg-violet-600 py-2 text-white hover:bg-violet-900"
+            onClick={() => addItem(selectedDateStr)}
+          >
+            + New Activity
+          </button>
         </div>
-      ) : (
-        <div className="relative flex gap-4">
-          <TimelineIndicator
-            data={filteredData}
-            currentIndex={currentIndex}
-            completedUpTo={completedUpTo}
-            onClick={handleStepClick}
-          />
-          <div className="flex flex-1 flex-col gap-0">
-            {filteredData.map((it, i) => (
-              <div ref={(el) => (refs.current[i] = el)} key={it.id}>
-                <TimelineCard
-                  {...it}
-                  isActive={i === currentIndex}
-                  onClick={() => {
-                    updateDateState(selectedDateStr, { currentIndex: i });
-                    goTo(i);
-                    onActiveChange?.(it);
-                  }}
-                  onToggleDone={() => handleStepClick(i)}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -3,10 +3,12 @@ import Calendar from "./Calendar";
 import Timeline from "./Timeline";
 import Header from "./Header";
 import SearchBox from "./SearchBox";
-import { startOfDay } from "date-fns";
-
-import itineraryData from "../../data/itineraryData.js";
-import { parseISO, differenceInCalendarDays, format } from "date-fns";
+import {
+  startOfDay,
+  parseISO,
+  differenceInCalendarDays,
+  format,
+} from "date-fns";
 
 export default function SchedulePage() {
   const [selectedDay, setSelectedDay] = useState(() => startOfDay(new Date()));
@@ -14,34 +16,54 @@ export default function SchedulePage() {
   const [completedCount, setCompletedCount] = useState(0);
   const [todayCurrentActivity, setTodayCurrentActivity] = useState(null);
 
+  // Load itinerary data once
+  const [itineraryData, setItineraryData] = useState(() => {
+    try {
+      const saved = localStorage.getItem("itinerary_data");
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("itinerary_data", JSON.stringify(itineraryData));
+    } catch {
+      // optional handling
+    }
+  }, [itineraryData]);
+
   const selectedDayRef = useRef(selectedDay);
   useEffect(() => {
     selectedDayRef.current = selectedDay;
   }, [selectedDay]);
 
+  // Track today's current activity
   useEffect(() => {
-    // track today's current activity separately
-    const todayDate = startOfDay(new Date());
-
-    if (selectedDayRef.current.getTime() === todayDate.getTime()) {
+    const today = startOfDay(new Date());
+    if (selectedDayRef.current.getTime() === today.getTime()) {
       setTodayCurrentActivity(currentActivity);
     }
   }, [currentActivity]);
 
-  // first activity for today (always shown in header title)
-  const [todayDateStr] = useState(() =>
-    format(startOfDay(new Date()), "yyyy-MM-dd"),
+  // Today date string
+  const todayDateStr = useMemo(
+    () => format(startOfDay(new Date()), "yyyy-MM-dd"),
+    [],
   );
 
+  // First activity of today
   const todayFirstActivity = useMemo(() => {
     const list = itineraryData[todayDateStr] || [];
     return list.length > 0 ? list[0] : null;
-  }, [todayDateStr]);
+  }, [itineraryData, todayDateStr]);
 
-  // today's day number and total items
+  // Day number for today
   const todayDayNumber = useMemo(() => {
     const dates = Object.keys(itineraryData).sort();
     if (dates.length === 0) return 1;
+
     const first = dates[0];
     try {
       const diff = differenceInCalendarDays(
@@ -52,25 +74,26 @@ export default function SchedulePage() {
     } catch {
       return 1;
     }
-  }, [todayDateStr]);
+  }, [itineraryData, todayDateStr]);
 
-  const todayTotalItems = useMemo(
-    () => (itineraryData[todayDateStr] || []).length,
-    [todayDateStr],
-  );
+  // Total items today
+  const todayTotalItems = useMemo(() => {
+    return (itineraryData[todayDateStr] || []).length;
+  }, [itineraryData, todayDateStr]);
 
   return (
     <div className="flex min-h-screen flex-col">
-      {/* Header - tidak scroll */}
-
       <Header
-        todayCurrentActivity={todayCurrentActivity || todayFirstActivity}
+        todayCurrentActivity={
+          todayCurrentActivity == null
+            ? todayFirstActivity
+            : todayCurrentActivity
+        }
         completedCount={completedCount}
         totalItems={todayTotalItems}
         dayNumber={todayDayNumber}
       />
 
-      {/* Calendar + SearchBox sticky */}
       <div className="sticky top-0 z-30 bg-white pb-2">
         <div className="mx-2 mt-4">
           <Calendar selectedDay={selectedDay} onSelectDay={setSelectedDay} />
@@ -78,12 +101,13 @@ export default function SchedulePage() {
         </div>
       </div>
 
-      {/* HANYA TIMELINE yang scroll */}
       <main className="flex-1 overflow-y-auto">
         <Timeline
           selectedDay={selectedDay}
           onActiveChange={setCurrentActivity}
           onCompletedChange={setCompletedCount}
+          itineraryData={itineraryData}
+          setItineraryData={setItineraryData}
         />
       </main>
     </div>
