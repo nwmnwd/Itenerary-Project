@@ -28,7 +28,15 @@ export default function SchedulePage() {
 
   useEffect(() => {
     try {
-      localStorage.setItem("itinerary_data", JSON.stringify(itineraryData));
+      // Clean up empty dates before saving
+      const cleanedData = Object.keys(itineraryData).reduce((acc, dateStr) => {
+        if (itineraryData[dateStr] && itineraryData[dateStr].length > 0) {
+          acc[dateStr] = itineraryData[dateStr];
+        }
+        return acc;
+      }, {});
+      
+      localStorage.setItem("itinerary_data", JSON.stringify(cleanedData));
     } catch {
       // optional handling
     }
@@ -59,12 +67,16 @@ export default function SchedulePage() {
     return list.length > 0 ? list[0] : null;
   }, [itineraryData, todayDateStr]);
 
-  // Day number for today
+  // Day number for today - only count dates with data
   const todayDayNumber = useMemo(() => {
-    const dates = Object.keys(itineraryData).sort();
-    if (dates.length === 0) return 1;
+    // Get only dates that have activities (not empty)
+    const datesWithData = Object.keys(itineraryData)
+      .filter(dateStr => itineraryData[dateStr] && itineraryData[dateStr].length > 0)
+      .sort();
+    
+    if (datesWithData.length === 0) return 1;
 
-    const first = dates[0];
+    const first = datesWithData[0];
     try {
       const diff = differenceInCalendarDays(
         parseISO(todayDateStr),

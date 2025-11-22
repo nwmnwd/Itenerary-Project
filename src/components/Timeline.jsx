@@ -29,7 +29,7 @@ export default function Timeline({
         ...(prev[dateStr] || []),
         {
           id: crypto.randomUUID(),
-          time: "00:00",
+          time: "23:59",
           activity: "",
           location: "",
           isNew: true,
@@ -65,15 +65,17 @@ export default function Timeline({
   const lastDateRef = useRef(null);
 
   // Sort data by time
-  const filteredData = [...(itineraryData[selectedDateStr] || [])].sort((a, b) => {
-    // Convert time to comparable format (HH:MM to minutes)
-    const timeToMinutes = (timeStr) => {
-      const [hours, minutes] = timeStr.split(':').map(Number);
-      return hours * 60 + minutes;
-    };
-    
-    return timeToMinutes(a.time) - timeToMinutes(b.time);
-  });
+  const filteredData = [...(itineraryData[selectedDateStr] || [])].sort(
+    (a, b) => {
+      // Convert time to comparable format (HH:MM to minutes)
+      const timeToMinutes = (timeStr) => {
+        const [hours, minutes] = timeStr.split(":").map(Number);
+        return hours * 60 + minutes;
+      };
+
+      return timeToMinutes(a.time) - timeToMinutes(b.time);
+    },
+  );
 
   useEffect(() => {
     const isToday = selectedDateStr === todayStr;
