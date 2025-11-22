@@ -48,23 +48,19 @@ export default function Timeline({
   const getDateState = (dateStr) =>
     timelineState[dateStr] || { currentIndex: 0, completedUpTo: -1 };
 
-  const updateDateState = (dateStr, newState) =>
+  const updateDateState = (dateStr, newState) => {
     setTimelineState((prev) => {
       const updated = {
         ...prev,
         [dateStr]: {
-          ...getDateState(dateStr),
+          ...prev[dateStr],
           ...newState,
         },
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
       return updated;
     });
-
-  const { currentIndex, completedUpTo } = getDateState(selectedDateStr);
-
-  const refs = useRef([]);
-  const lastDateRef = useRef(null);
+  };
 
   // Sort and filter data by time and search query
   const filteredData = [...(itineraryData[selectedDateStr] || [])]
@@ -87,6 +83,15 @@ export default function Timeline({
              location.includes(query) || 
              notes.includes(query);
     });
+
+  const rawState = getDateState(selectedDateStr);
+  
+  // Safely clamp indices based on current data length
+  const currentIndex = filteredData.length === 0 ? 0 : Math.min(Math.max(0, rawState.currentIndex), filteredData.length - 1);
+  const completedUpTo = filteredData.length === 0 ? -1 : Math.min(rawState.completedUpTo, filteredData.length - 1);
+
+  const refs = useRef([]);
+  const lastDateRef = useRef(null);
 
   useEffect(() => {
     const isToday = selectedDateStr === todayStr;
@@ -137,11 +142,36 @@ export default function Timeline({
     }));
   };
 
-  const deleteItem = (dateStr, id) =>
-    setItineraryData((prev) => ({
-      ...prev,
-      [dateStr]: prev[dateStr].filter((item) => item.id !== id),
-    }));
+  const deleteItem = (dateStr, id) => {
+    setItineraryData((prev) => {
+      const newData = prev[dateStr].filter((item) => item.id !== id);
+      
+      // If all items deleted, reset state
+      if (newData.length === 0) {
+        updateDateState(dateStr, {
+          currentIndex: 0,
+          completedUpTo: -1,
+        });
+      } else {
+        // Adjust indices if needed
+        const state = getDateState(dateStr);
+        const newCurrentIndex = Math.min(state.currentIndex, newData.length - 1);
+        const newCompletedUpTo = Math.min(state.completedUpTo, newData.length - 1);
+        
+        if (newCurrentIndex !== state.currentIndex || newCompletedUpTo !== state.completedUpTo) {
+          updateDateState(dateStr, {
+            currentIndex: Math.max(0, newCurrentIndex),
+            completedUpTo: newCompletedUpTo,
+          });
+        }
+      }
+      
+      return {
+        ...prev,
+        [dateStr]: newData,
+      };
+    });
+  };
 
   useEffect(() => {
     if (selectedDateStr === todayStr) {

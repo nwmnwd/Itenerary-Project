@@ -36,7 +36,7 @@ export default function SchedulePage() {
         }
         return acc;
       }, {});
-      
+
       localStorage.setItem("itinerary_data", JSON.stringify(cleanedData));
     } catch {
       // optional handling
@@ -48,32 +48,68 @@ export default function SchedulePage() {
     selectedDayRef.current = selectedDay;
   }, [selectedDay]);
 
-  // Track today's current activity
-  useEffect(() => {
-    const today = startOfDay(new Date());
-    if (selectedDayRef.current.getTime() === today.getTime()) {
-      setTodayCurrentActivity(currentActivity);
-    }
-  }, [currentActivity]);
-
   // Today date string
   const todayDateStr = useMemo(
     () => format(startOfDay(new Date()), "yyyy-MM-dd"),
     [],
   );
 
-  // First activity of today
+  // Track today's current activity
+  useEffect(() => {
+    const today = startOfDay(new Date());
+    if (selectedDayRef.current.getTime() === today.getTime()) {
+      setTodayCurrentActivity(currentActivity);
+    } else {
+      // Reset if not on today
+      setTodayCurrentActivity(null);
+    }
+  }, [currentActivity]);
+
+  // Reset todayCurrentActivity when itineraryData changes
+  useEffect(() => {
+    const todayActivities = itineraryData[todayDateStr] || [];
+
+    // If no activities for today, reset
+    if (todayActivities.length === 0) {
+      setTodayCurrentActivity(null);
+      setCurrentActivity(null);
+    } else if (todayCurrentActivity) {
+      // Check if current activity still exists
+      const stillExists = todayActivities.some(
+        (item) => item.id === todayCurrentActivity.id,
+      );
+      if (!stillExists) {
+        setTodayCurrentActivity(null);
+      }
+    }
+  }, [itineraryData, todayDateStr, todayCurrentActivity]);
+
+  // First activity of today (sorted by time)
   const todayFirstActivity = useMemo(() => {
     const list = itineraryData[todayDateStr] || [];
-    return list.length > 0 ? list[0] : null;
+    if (list.length === 0) return null;
+
+    // Sort by time to get the earliest activity
+    const sorted = [...list].sort((a, b) => {
+      const timeToMinutes = (timeStr) => {
+        const [hours, minutes] = timeStr.split(":").map(Number);
+        return hours * 60 + minutes;
+      };
+      return timeToMinutes(a.time) - timeToMinutes(b.time);
+    });
+
+    return sorted[0];
   }, [itineraryData, todayDateStr]);
 
   // Day number for today - only count dates with data
   const todayDayNumber = useMemo(() => {
     const datesWithData = Object.keys(itineraryData)
-      .filter(dateStr => itineraryData[dateStr] && itineraryData[dateStr].length > 0)
+      .filter(
+        (dateStr) =>
+          itineraryData[dateStr] && itineraryData[dateStr].length > 0,
+      )
       .sort();
-    
+
     if (datesWithData.length === 0) return 1;
 
     const first = datesWithData[0];
