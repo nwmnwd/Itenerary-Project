@@ -160,8 +160,8 @@ export default function Timeline({
   };
 
   return (
-    <div className="mx-8 mt-5 mb-8">
-      <div className="relative flex gap-4">
+    <div className="mx-4 mt-5 mb-8">
+      <div className="relative flex gap-2">
         <TimelineIndicator
           data={filteredData}
           currentIndex={currentIndex}
