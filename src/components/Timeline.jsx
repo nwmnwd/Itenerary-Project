@@ -64,6 +64,17 @@ export default function Timeline({
   const refs = useRef([]);
   const lastDateRef = useRef(null);
 
+  // Sort data by time
+  const filteredData = [...(itineraryData[selectedDateStr] || [])].sort((a, b) => {
+    // Convert time to comparable format (HH:MM to minutes)
+    const timeToMinutes = (timeStr) => {
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      return hours * 60 + minutes;
+    };
+    
+    return timeToMinutes(a.time) - timeToMinutes(b.time);
+  });
+
   useEffect(() => {
     const isToday = selectedDateStr === todayStr;
 
@@ -95,7 +106,7 @@ export default function Timeline({
 
     if (isToday) {
       requestAnimationFrame(() => {
-        onActiveChange?.(filteredData[currentIndex]); // ← FIX
+        onActiveChange?.(filteredData[currentIndex]);
         refs.current[currentIndex]?.scrollIntoView({
           behavior: "smooth",
           block: "center",
@@ -103,8 +114,6 @@ export default function Timeline({
       });
     }
   }, [selectedDateStr, todayStr, currentIndex]);
-
-  const filteredData = itineraryData[selectedDateStr] || [];
 
   const editItem = (dateStr, id, newFields) => {
     setItineraryData((prev) => ({
