@@ -11,6 +11,7 @@ export default function Timeline({
   onCompletedChange,
   itineraryData,
   setItineraryData,
+  searchQuery = "",
 }) {
   const todayStr = format(startOfDay(new Date()), "yyyy-MM-dd");
   const selectedDateStr = format(selectedDay, "yyyy-MM-dd");
@@ -29,9 +30,10 @@ export default function Timeline({
         ...(prev[dateStr] || []),
         {
           id: crypto.randomUUID(),
-          time: "23:59",
+          time: "00:00",
           activity: "",
           location: "",
+          notes: "",
           isNew: true,
         },
       ],
@@ -64,18 +66,27 @@ export default function Timeline({
   const refs = useRef([]);
   const lastDateRef = useRef(null);
 
-  // Sort data by time
-  const filteredData = [...(itineraryData[selectedDateStr] || [])].sort(
-    (a, b) => {
-      // Convert time to comparable format (HH:MM to minutes)
+  // Sort and filter data by time and search query
+  const filteredData = [...(itineraryData[selectedDateStr] || [])]
+    .sort((a, b) => {
       const timeToMinutes = (timeStr) => {
-        const [hours, minutes] = timeStr.split(":").map(Number);
+        const [hours, minutes] = timeStr.split(':').map(Number);
         return hours * 60 + minutes;
       };
-
       return timeToMinutes(a.time) - timeToMinutes(b.time);
-    },
-  );
+    })
+    .filter(item => {
+      if (!searchQuery.trim()) return true;
+      
+      const query = searchQuery.toLowerCase();
+      const activity = (item.activity || "").toLowerCase();
+      const location = (item.location || "").toLowerCase();
+      const notes = (item.notes || "").toLowerCase();
+      
+      return activity.includes(query) || 
+             location.includes(query) || 
+             notes.includes(query);
+    });
 
   useEffect(() => {
     const isToday = selectedDateStr === todayStr;
@@ -172,6 +183,12 @@ export default function Timeline({
 
   return (
     <div className="mx-4 mt-5 mb-8">
+      {searchQuery && filteredData.length === 0 && (
+        <div className="text-center py-8 text-gray-500">
+          No results found for "{searchQuery}"
+        </div>
+      )}
+      
       <div className="relative flex gap-1">
         <TimelineIndicator
           data={filteredData}
@@ -191,14 +208,12 @@ export default function Timeline({
                 isActive={i === currentIndex}
                 onClick={() => {
                   updateDateState(selectedDateStr, { currentIndex: i });
-
-                  // 🔥 FIX — update current active item
                   onActiveChange?.(filteredData[i]);
-
                   goTo(i);
                 }}
                 onEdit={(fields) => editItem(selectedDateStr, item.id, fields)}
                 onDelete={() => deleteItem(selectedDateStr, item.id)}
+                searchQuery={searchQuery}
               />
             </div>
           ))}
