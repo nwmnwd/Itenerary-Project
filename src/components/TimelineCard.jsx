@@ -6,16 +6,36 @@ import InputActivity from "./InputActivity";
 import InputLocation from "./InputLocation";
 import InputTime from "./InputTime";
 
+// Helper to highlight search matches
+function HighlightText({ text, query }) {
+  if (!query || !text) return <>{text}</>;
+  
+  const parts = text.split(new RegExp(`(${query})`, 'gi'));
+  return (
+    <>
+      {parts.map((part, i) => 
+        part.toLowerCase() === query.toLowerCase() ? (
+          <mark key={i} className="bg-yellow-200 text-gray-900">{part}</mark>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  );
+}
+
 export default function TimelineCard({
   id,
   time,
   activity,
   location,
+  notes,
   isNew,
   isActive,
   onEdit,
   onDelete,
   onPositionChange,
+  searchQuery = "",
 }) {
   const [isEditing, setIsEditing] = useState(isNew || false);
   const [isSwiped, setIsSwiped] = useState(false);
@@ -23,6 +43,7 @@ export default function TimelineCard({
   const [newActivity, setNewActivity] = useState(activity);
   const [newLocation, setNewLocation] = useState(location);
   const [newTime, setNewTime] = useState(time);
+  const [newNotes, setNewNotes] = useState(notes || "");
   const timeRef = useRef(null);
 
   useEffect(() => {
@@ -30,10 +51,10 @@ export default function TimelineCard({
       const rect = timeRef.current.getBoundingClientRect();
       onPositionChange?.({ id, top: rect.top + window.scrollY });
     }
-  }, [isEditing, time, activity, location]);
+  }, [isEditing, time, activity, location, notes]);
 
   const handlers = useSwipeable({
-    onSwipedLeft: () => setIsSwiped(true),
+    onSwipedLeft: () => setIsEditing(false) || setIsSwiped(true),
     onSwipedRight: () => setIsSwiped(false),
     preventScrollOnSwipe: true,
     trackTouch: true,
@@ -55,7 +76,7 @@ export default function TimelineCard({
       <div className="relative">
         {/* Background Delete Layer */}
         <div
-          className={`absolute top-0 right-0 z-0 flex h-full w-26 items-center justify-center rounded-md bg-red-500 text-white transition-opacity duration-300 ${
+          className={`absolute top-0 right-0 z-0 flex h-full w-26 items-center justify-center rounded-md bg-red-600 text-white transition-opacity duration-300 ${
             isSwiped ? "opacity-100" : "pointer-events-none opacity-0"
           }`}
           onClick={onDelete}
@@ -71,82 +92,102 @@ export default function TimelineCard({
           } ${isSwiped ? "-translate-x-24" : "translate-x-0"} `}
           {...(!isEditing ? handlers : {})}
         >
-        {/* Edit button */}
-        {!isEditing && (
-          <div className="absolute top-5 right-4 flex gap-2 transition-opacity duration-200">
-            <button
-              className="text-sm text-gray-400 hover:text-blue-500"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsEditing(true);
-              }}
-            >
-              <EditIcon className="h-4 w-4" />
-            </button>
-          </div>
-        )}
-
-        {/* Editing Mode */}
-        {isEditing ? (
-          <div className="relative z-30 flex flex-col gap-1">
-            <InputActivity
-              value={newActivity}
-              onChange={setNewActivity}
-              isEditing={isEditing}
-              autoFocus={true}
-            />
-            <InputLocation 
-              value={newLocation} 
-              onChange={setNewLocation}
-              isEditing={isEditing}
-            />
-            <InputTime 
-              value={newTime} 
-              onChange={setNewTime}
-              isEditing={isEditing}
-            />
-
-            <div className="mt-2 flex justify-end gap-2">
+          {/* Edit button */}
+          {!isEditing && (
+            <div className="absolute top-5 right-4 flex gap-2 transition-opacity duration-200">
               <button
-                className="text-xs text-gray-500"
+                className="text-sm text-gray-400 hover:text-blue-500"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setIsEditing(false);
+                  setIsEditing(true);
                 }}
               >
-                Cancel
-              </button>
-
-              <button
-                className="rounded-md bg-blue-600 px-4 py-1 text-xs text-white"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit?.({
-                    activity: newActivity || "No Activity",
-                    location: newLocation,
-                    time: newTime || "--:--",
-                    isNew: false,
-                  });
-                  setIsEditing(false);
-                }}
-              >
-                Save
+                <EditIcon className="h-4 w-4" />
               </button>
             </div>
-          </div>
-        ) : (
-          <>
-            <h3 className="text-md font-semibold">{activity}</h3>
+          )}
 
-            <div className="mt-2 mb-3 flex items-center gap-2">
-              <PinIcon className="h-3 w-3 text-gray-400" />
-              <div className="text-xs text-gray-400">{location}</div>
+          {/* Editing Mode */}
+          {isEditing ? (
+            <div className="relative z-30 flex flex-col gap-1">
+              <InputActivity
+                value={newActivity}
+                onChange={setNewActivity}
+                isEditing={isEditing}
+                autoFocus={true}
+              />
+              <InputLocation 
+                value={newLocation} 
+                onChange={setNewLocation}
+                isEditing={isEditing}
+              />
+              <InputTime 
+                value={newTime} 
+                onChange={setNewTime}
+                isEditing={isEditing}
+              />
+              
+              <NotesInput 
+                value={newNotes}
+                onChange={setNewNotes}
+                isEditing={isEditing}
+              />
+
+              <div className="mt-2 flex justify-end gap-2">
+                <button
+                  className="text-xs text-gray-500"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsEditing(false);
+                    // Reset to original values
+                    setNewActivity(activity);
+                    setNewLocation(location);
+                    setNewTime(time);
+                    setNewNotes(notes || "");
+                  }}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  className="rounded-md bg-blue-600 px-4 py-1 text-xs text-white"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit?.({
+                      activity: newActivity || "No Activity",
+                      location: newLocation,
+                      time: newTime || "--:--",
+                      notes: newNotes,
+                      isNew: false,
+                    });
+                    setIsEditing(false);
+                  }}
+                >
+                  Save
+                </button>
+              </div>
             </div>
+          ) : (
+            <>
+              <h3 className="text-md font-semibold">
+                <HighlightText text={activity} query={searchQuery} />
+              </h3>
 
-            <NotesInput />
-          </>
-        )}
-      </div>
+              <div className="mt-2 mb-3 flex items-center gap-2">
+                <PinIcon className="h-3 w-3 text-gray-400" />
+                <div className="text-xs text-gray-400">
+                  <HighlightText text={location} query={searchQuery} />
+                </div>
+              </div>
+
+              <NotesInput 
+                value={notes}
+                onChange={() => {}}
+                isEditing={false}
+              />
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

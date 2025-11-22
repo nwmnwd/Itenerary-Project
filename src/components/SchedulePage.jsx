@@ -15,6 +15,7 @@ export default function SchedulePage() {
   const [currentActivity, setCurrentActivity] = useState(null);
   const [completedCount, setCompletedCount] = useState(0);
   const [todayCurrentActivity, setTodayCurrentActivity] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Load itinerary data once
   const [itineraryData, setItineraryData] = useState(() => {
@@ -69,7 +70,6 @@ export default function SchedulePage() {
 
   // Day number for today - only count dates with data
   const todayDayNumber = useMemo(() => {
-    // Get only dates that have activities (not empty)
     const datesWithData = Object.keys(itineraryData)
       .filter(dateStr => itineraryData[dateStr] && itineraryData[dateStr].length > 0)
       .sort();
@@ -109,7 +109,7 @@ export default function SchedulePage() {
       <div className="sticky top-0 z-30 bg-white pb-2">
         <div className="mx-2 mt-4">
           <Calendar selectedDay={selectedDay} onSelectDay={setSelectedDay} />
-          <SearchBox />
+          <SearchBox value={searchQuery} onChange={setSearchQuery} />
         </div>
       </div>
 
@@ -120,6 +120,7 @@ export default function SchedulePage() {
           onCompletedChange={setCompletedCount}
           itineraryData={itineraryData}
           setItineraryData={setItineraryData}
+          searchQuery={searchQuery}
         />
       </main>
     </div>
