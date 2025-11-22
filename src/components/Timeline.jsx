@@ -30,8 +30,8 @@ export default function Timeline({
         {
           id: crypto.randomUUID(),
           time: "00:00",
-          activity: "New Activity",
-          location: "Unknown",
+          activity: "",
+          location: "",
           isNew: true,
         },
       ],
@@ -85,7 +85,7 @@ export default function Timeline({
           onActiveChange?.(filteredData[currentIndex]);
           refs.current[currentIndex]?.scrollIntoView({
             behavior: "smooth",
-            block: "end",
+            block: "center",
           });
         });
       }
@@ -98,7 +98,7 @@ export default function Timeline({
         onActiveChange?.(filteredData[currentIndex]); // ← FIX
         refs.current[currentIndex]?.scrollIntoView({
           behavior: "smooth",
-          block: "end",
+          block: "center",
         });
       });
     }
