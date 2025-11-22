@@ -12,7 +12,7 @@ export default function InputTime({ value, onChange, isEditing }) {
         type="time"
         name="time"
         placeholder="Time"
-        className="block min-w-0 grow  pl-1 text-xs text-black placeholder:text-gray-500 focus:outline-none"
+        className="block min-w-0 grow  pl-1 text-xs text-black  placeholder:text-gray-500 focus:outline-none"
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />

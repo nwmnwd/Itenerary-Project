@@ -32,7 +32,6 @@ export default function TimelineCard({
     }
   }, [isEditing, time, activity, location]);
 
-  // Gesture handler
   const handlers = useSwipeable({
     onSwipedLeft: () => setIsSwiped(true),
     onSwipedRight: () => setIsSwiped(false),
@@ -42,7 +41,7 @@ export default function TimelineCard({
   });
 
   return (
-    <div className="relative flex-1" {...handlers}>
+    <div className="relative" style={{ touchAction: "pan-y" }}>
       {/* Time */}
       <div
         ref={timeRef}
@@ -52,25 +51,29 @@ export default function TimelineCard({
         {!isEditing ? time : ""}
       </div>
 
-      {/* BACKGROUND DELETE LAYER */}
+      {/* Background Delete Layer */}
       <div
-        className={`absolute right-0 top-0 h-full w-28 rounded-md bg-red-500 
-          flex items-center justify-center text-white transition-opacity duration-200
-          ${isSwiped ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        className={`absolute top-0 right-0 z-0 flex h-full w-28 items-center justify-center rounded-md bg-red-500 text-white transition-opacity duration-200 ${
+          isSwiped ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
         onClick={onDelete}
       >
         <DeleteIcon className="h-6 w-6" />
       </div>
 
-      {/* CARD FOREGROUND */}
+      {/* Foreground Card with Swipe Handler */}
+      {/* Foreground Card with Conditional Swipe */}
       <div
-        className={`group relative rounded-md p-4 outline-1 -outline-offset-1 transition-transform duration-300
-          ${isActive ? "bg-violet-50 outline-violet-400" : "bg-white outline-gray-300"}
-          ${isSwiped ? "-translate-x-24" : "translate-x-0"}
-        `}
+        className={`group relative z-10 rounded-md p-4 outline-1 -outline-offset-1 transition-transform duration-300 ${
+          isActive
+            ? "bg-violet-50 outline-violet-400"
+            : "bg-white outline-gray-300"
+        } ${isSwiped ? "-translate-x-24" : "translate-x-0"} `}
+        {...(!isEditing ? handlers : {})} // swipe hanya saat NOT editing
       >
+        {/* Edit button */}
         {!isEditing && (
-          <div className="absolute top-5 right-4 flex gap-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+          <div className="absolute top-5 right-4 flex gap-2 transition-opacity duration-200">
             <button
               className="text-sm text-gray-400 hover:text-blue-500"
               onClick={(e) => {
@@ -83,8 +86,9 @@ export default function TimelineCard({
           </div>
         )}
 
+        {/* Editing Mode */}
         {isEditing ? (
-          <div className="flex flex-col gap-1">
+          <div className="relative z-30 flex flex-col gap-1">
             <InputActivity
               value={newActivity}
               onChange={setNewActivity}
