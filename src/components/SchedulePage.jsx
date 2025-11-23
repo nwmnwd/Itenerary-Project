@@ -1,3 +1,5 @@
+// SchedulePage.jsx (KODE PERBAIKAN LENGKAP)
+
 import { useState, useEffect, useMemo, useRef } from "react";
 import Calendar from "./Calendar";
 import Timeline from "./Timeline";
@@ -26,6 +28,22 @@ export default function SchedulePage() {
       return {};
     }
   });
+
+  // 🔥 PERBAIKAN UTAMA: INISIALISASI DATA DI KOMPONEN INDUK
+  // Ini memastikan setiap tanggal yang dipilih memiliki array kosong di itineraryData.
+  useEffect(() => {
+    const selectedDateStr = format(selectedDay, "yyyy-MM-dd");
+
+    setItineraryData((prev) => {
+      // Jika data untuk tanggal ini sudah ada, jangan lakukan apa-apa
+      if (prev[selectedDateStr]) return prev;
+
+      // Jika belum ada, inisialisasi dengan array kosong
+      console.log(`[SchedulePage] Initializing data for ${selectedDateStr}`);
+      return { ...prev, [selectedDateStr]: [] };
+    });
+  }, [selectedDay]); // Cukup bergantung pada selectedDay
+  // 🔥 END PERBAIKAN
 
   useEffect(() => {
     try {

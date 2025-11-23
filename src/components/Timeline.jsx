@@ -16,38 +16,38 @@ export default function Timeline({
   const todayStr = format(startOfDay(new Date()), "yyyy-MM-dd");
   const selectedDateStr = format(selectedDay, "yyyy-MM-dd");
 
-  useEffect(() => {
-    setItineraryData((prev) => {
-      if (prev[selectedDateStr]) return prev;
-      return { ...prev, [selectedDateStr]: [] };
-    });
-  }, [selectedDateStr, setItineraryData]);
+  // *** BLOK useEffect YANG BERMASALAH TELAH DIHAPUS DI SINI ***
 
-  const addItem = useCallback((dateStr) => {
-    setItineraryData((prev) => ({
-      ...prev,
-      [dateStr]: [
-        ...(prev[dateStr] || []),
-        {
-          id: crypto.randomUUID(),
-          time: "00:00",
-          activity: "",
-          location: "",
-          notes: "",
-          isNew: true,
-        },
-      ],
-    }));
-  }, [setItineraryData]);
+  const addItem = useCallback(
+    (dateStr) => {
+      setItineraryData((prev) => ({
+        ...prev,
+        [dateStr]: [
+          ...(prev[dateStr] || []),
+          {
+            id: crypto.randomUUID(),
+            time: "00:00",
+            activity: "",
+            location: "",
+            notes: "",
+            isNew: true,
+          },
+        ],
+      }));
+    },
+    [setItineraryData],
+  );
 
   const [timelineState, setTimelineState] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     return saved ? JSON.parse(saved) : {};
   });
 
-  const getDateState = useCallback((dateStr) =>
-    timelineState[dateStr] || { currentIndex: 0, completedUpTo: -1 }
-  , [timelineState]);
+  const getDateState = useCallback(
+    (dateStr) =>
+      timelineState[dateStr] || { currentIndex: 0, completedUpTo: -1 },
+    [timelineState],
+  );
 
   const updateDateState = useCallback((dateStr, newState) => {
     setTimelineState((prev) => {
@@ -67,29 +67,37 @@ export default function Timeline({
   const filteredData = [...(itineraryData[selectedDateStr] || [])]
     .sort((a, b) => {
       const timeToMinutes = (timeStr) => {
-        const [hours, minutes] = timeStr.split(':').map(Number);
+        const [hours, minutes] = timeStr.split(":").map(Number);
         return hours * 60 + minutes;
       };
       return timeToMinutes(a.time) - timeToMinutes(b.time);
     })
-    .filter(item => {
+    .filter((item) => {
       if (!searchQuery.trim()) return true;
-      
+
       const query = searchQuery.toLowerCase();
       const activity = (item.activity || "").toLowerCase();
       const location = (item.location || "").toLowerCase();
       const notes = (item.notes || "").toLowerCase();
-      
-      return activity.includes(query) || 
-             location.includes(query) || 
-             notes.includes(query);
+
+      return (
+        activity.includes(query) ||
+        location.includes(query) ||
+        notes.includes(query)
+      );
     });
 
   const rawState = getDateState(selectedDateStr);
-  
+
   // Safely clamp indices based on current data length
-  const currentIndex = filteredData.length === 0 ? 0 : Math.min(Math.max(0, rawState.currentIndex), filteredData.length - 1);
-  const completedUpTo = filteredData.length === 0 ? -1 : Math.min(rawState.completedUpTo, filteredData.length - 1);
+  const currentIndex =
+    filteredData.length === 0
+      ? 0
+      : Math.min(Math.max(0, rawState.currentIndex), filteredData.length - 1);
+  const completedUpTo =
+    filteredData.length === 0
+      ? -1
+      : Math.min(rawState.completedUpTo, filteredData.length - 1);
 
   const refs = useRef([]);
   const lastDateRef = useRef(null);
@@ -132,51 +140,81 @@ export default function Timeline({
         });
       });
     }
-  }, [selectedDateStr, todayStr, currentIndex, filteredData, onActiveChange, updateDateState]);
+  }, [
+    selectedDateStr,
+    todayStr,
+    currentIndex,
+    filteredData,
+    onActiveChange,
+    updateDateState,
+  ]);
 
-  const editItem = useCallback((dateStr, id, newFields) => {
-    setItineraryData((prev) => ({
-      ...prev,
-      [dateStr]: prev[dateStr].map((item) =>
-        item.id === id ? { ...item, ...newFields } : item,
-      ),
-    }));
-  }, [setItineraryData]);
-
-  const deleteItem = useCallback((dateStr, id) => {
-    setItineraryData((prev) => {
-      const newData = prev[dateStr].filter((item) => item.id !== id);
-      
-      // If all items deleted, reset state
-      if (newData.length === 0) {
-        updateDateState(dateStr, {
-          currentIndex: 0,
-          completedUpTo: -1,
-        });
-      } else {
-        // Adjust indices if needed
-        const state = getDateState(dateStr);
-        const newCurrentIndex = Math.min(state.currentIndex, newData.length - 1);
-        const newCompletedUpTo = Math.min(state.completedUpTo, newData.length - 1);
-        
-        if (newCurrentIndex !== state.currentIndex || newCompletedUpTo !== state.completedUpTo) {
-          updateDateState(dateStr, {
-            currentIndex: Math.max(0, newCurrentIndex),
-            completedUpTo: newCompletedUpTo,
-          });
-        }
-      }
-      
-      return {
+  const editItem = useCallback(
+    (dateStr, id, newFields) => {
+      setItineraryData((prev) => ({
         ...prev,
-        [dateStr]: newData,
-      };
-    });
-  }, [setItineraryData, updateDateState, getDateState]);
+        [dateStr]: prev[dateStr].map((item) =>
+          item.id === id ? { ...item, ...newFields } : item,
+        ),
+      }));
+    },
+    [setItineraryData],
+  );
+
+  const deleteItem = useCallback(
+    (dateStr, id) => {
+      setItineraryData((prev) => {
+        const newData = prev[dateStr].filter((item) => item.id !== id);
+
+        // If all items deleted, reset state
+        if (newData.length === 0) {
+          requestAnimationFrame(() => {
+            updateDateState(dateStr, {
+              currentIndex: 0,
+              completedUpTo: -1,
+            });
+          });
+        } else {
+          // Adjust indices if needed
+          const state = getDateState(dateStr);
+          const newCurrentIndex = Math.min(
+            state.currentIndex,
+            newData.length - 1,
+          );
+          const newCompletedUpTo = Math.min(
+            state.completedUpTo,
+            newData.length - 1,
+          );
+
+          if (
+            newCurrentIndex !== state.currentIndex ||
+            newCompletedUpTo !== state.completedUpTo
+          ) {
+            requestAnimationFrame(() => {
+              updateDateState(dateStr, {
+                currentIndex: Math.max(0, newCurrentIndex),
+                completedUpTo: newCompletedUpTo,
+              });
+            });
+          }
+        }
+
+        return {
+          ...prev,
+          [dateStr]: newData,
+        };
+      });
+    },
+    [setItineraryData, updateDateState, getDateState],
+  );
 
   useEffect(() => {
     if (selectedDateStr === todayStr) {
-      onCompletedChange?.(completedUpTo >= 0 ? completedUpTo + 1 : 0);
+      const count = completedUpTo >= 0 ? completedUpTo + 1 : 0;
+
+      requestAnimationFrame(() => {
+        onCompletedChange?.(count);
+      });
     }
   }, [completedUpTo, selectedDateStr, todayStr, onCompletedChange]);
 
@@ -186,34 +224,45 @@ export default function Timeline({
     refs.current[i]?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, []);
 
-  const handleStepClick = useCallback((i) => {
-    const isToday = selectedDateStr === todayStr;
+  const handleStepClick = useCallback(
+    (i) => {
+      const isToday = selectedDateStr === todayStr;
 
-    if (i <= completedUpTo) {
-      updateDateState(selectedDateStr, {
-        currentIndex: i,
-        ...(isToday ? { completedUpTo: i - 1 } : {}),
-      });
-    } else {
-      const next = Math.min(i + 1, filteredData.length - 1);
-      updateDateState(selectedDateStr, {
-        currentIndex: next,
-        ...(isToday ? { completedUpTo: Math.max(completedUpTo, i) } : {}),
-      });
-    }
-    onActiveChange?.(filteredData[i]);
+      if (i <= completedUpTo) {
+        updateDateState(selectedDateStr, {
+          currentIndex: i,
+          ...(isToday ? { completedUpTo: i - 1 } : {}),
+        });
+      } else {
+        const next = Math.min(i + 1, filteredData.length - 1);
+        updateDateState(selectedDateStr, {
+          currentIndex: next,
+          ...(isToday ? { completedUpTo: Math.max(completedUpTo, i) } : {}),
+        });
+      }
+      onActiveChange?.(filteredData[i]);
 
-    goTo(i);
-  }, [selectedDateStr, todayStr, completedUpTo, filteredData, onActiveChange, goTo, updateDateState]);
+      goTo(i);
+    },
+    [
+      selectedDateStr,
+      todayStr,
+      completedUpTo,
+      filteredData,
+      onActiveChange,
+      goTo,
+      updateDateState,
+    ],
+  );
 
   return (
     <div className="mx-4 mt-5 mb-8">
       {searchQuery && filteredData.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
+        <div className="py-8 text-center text-gray-500">
           No results found for "{searchQuery}"
         </div>
       )}
-      
+
       <div className="relative flex gap-1">
         <TimelineIndicator
           data={filteredData}
