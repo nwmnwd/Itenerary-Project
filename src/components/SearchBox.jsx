@@ -11,7 +11,7 @@ function SearchBox({ value, onChange }) {
             type="text"
             name="search"
             placeholder="Search activities, locations, or notes"
-            className="block min-w-0 grow py-2.5 pr-3 pl-1 text-xs font-normal text-gray-900 placeholder:text-gray-400 focus:outline-none"
+            className="block min-w-0 grow py-3 pr-3 pl-1 text-xs font-normal text-gray-900 placeholder:text-gray-400 focus:outline-none"
             value={value}
             onChange={(e) => onChange(e.target.value)}
           />

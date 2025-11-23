@@ -214,7 +214,8 @@ const handleShowSubscriptionForSave = useCallback((activityData, dateStr) => {
         </div>
       </div>
 
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto ">
+        
         <Timeline
           selectedDay={selectedDay}
           onActiveChange={setCurrentActivity}
