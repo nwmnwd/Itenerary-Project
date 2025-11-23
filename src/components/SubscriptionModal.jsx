@@ -84,7 +84,7 @@ const PaymentForm = ({ onPaymentSuccess, onCancel }) => {
             <>
               {/* Payment buttons and info */}
               <p className="mb-6 text-2xl font-semibold dark:text-white">
-                Total: 10.000.000 IDR
+                Total: 0 IDR
               </p>
               <button
                 onClick={handlePay}
