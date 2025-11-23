@@ -13,45 +13,62 @@ export default function TimelineIndicator({
     const update = () => {
       if (!containerRef.current) return;
 
-      const parent = containerRef.current.closest('.relative.flex.gap-4');
+      const parent = containerRef.current.closest(".relative.flex.gap-1");
       if (!parent) return;
 
-      const times = parent.querySelectorAll('.time-text');
+      const times = parent.querySelectorAll(".time-text");
       if (times.length !== data.length) return;
 
       const containerRect = containerRef.current.getBoundingClientRect();
 
-      const newPos = Array.from(times).map(time => {
+      const newPos = Array.from(times).map((time) => {
         const rect = time.getBoundingClientRect();
-        // Posisi TOP dari time + setengah HEIGHT untuk center
-        return rect.top - containerRect.top + (rect.height / 2);
+        // Posisi center dari time text
+        const timeCenter = rect.top + rect.height / 2;
+        return timeCenter - containerRect.top;
       });
 
       setPositions(newPos);
     };
 
-    // Force multiple updates
+    // Force multiple updates untuk menangkap perubahan layout
     update();
-    const t1 = setTimeout(update, 100);
-    const t2 = setTimeout(update, 300);
-    const t3 = setTimeout(update, 600);
-    const t4 = setTimeout(update, 1000);
+    const t1 = setTimeout(update, 50);
+    const t2 = setTimeout(update, 150);
+    const t3 = setTimeout(update, 300);
+    const t4 = setTimeout(update, 500);
 
-    window.addEventListener('resize', update);
-    
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+
+    // Observe DOM changes untuk update otomatis
+    const observer = new MutationObserver(update);
+    const parent = containerRef.current?.closest(".relative.flex.gap-1");
+    if (parent) {
+      observer.observe(parent, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        characterData: true,
+      });
+    }
+
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
       clearTimeout(t3);
       clearTimeout(t4);
-      window.removeEventListener('resize', update);
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+      observer.disconnect();
     };
-  }, [data.length]);
+  }, [data.length, data]);
 
   // Fallback positions jika belum ter-update
-  const displayPos = positions.length === data.length 
-    ? positions 
-    : data.map((_, i) => i * 180 + 20);
+  const displayPos =
+    positions.length === data.length
+      ? positions
+      : data.map((_, i) => i * 180 + 20);
 
   const lineTop = displayPos[0];
   const lineBottom = displayPos[displayPos.length - 1];

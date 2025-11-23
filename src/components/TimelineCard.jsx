@@ -63,11 +63,11 @@ export default function TimelineCard({
 
   return (
     <div className="relative" style={{ touchAction: "pan-y" }}>
-      {/* Time */}
+      {/* Time - dengan height tetap untuk konsistensi */}
       <div
         ref={timeRef}
         className="time-text text-md mb-3 font-semibold text-gray-400"
-        style={{ marginTop: "4px" }}
+        style={{ minHeight: "24px", lineHeight: "24px" }}
       >
         {!isEditing ? time : ""}
       </div>
@@ -173,12 +173,14 @@ export default function TimelineCard({
                 <HighlightText text={activity} query={searchQuery} />
               </h3>
 
-              <div className="mt-2 mb-3 flex items-center gap-2">
-                <PinIcon className="h-3 w-3 text-gray-400" />
-                <div className="text-xs text-gray-400">
-                  <HighlightText text={location} query={searchQuery} />
+              {location && (
+                <div className="mt-2 mb-3 flex items-center gap-2">
+                  <PinIcon className="h-3 w-3 text-gray-400" />
+                  <div className="text-xs text-gray-400">
+                    <HighlightText text={location} query={searchQuery} />
+                  </div>
                 </div>
-              </div>
+              )}
 
               <NotesInput 
                 value={notes}
