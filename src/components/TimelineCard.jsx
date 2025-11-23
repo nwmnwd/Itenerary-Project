@@ -93,7 +93,7 @@ export default function TimelineCard({
       <div className="relative">
         {/* Background Delete Layer */}
         <div
-          className={`absolute top-0 right-0 z-0 flex h-full w-26 items-center justify-center rounded-md bg-red-600 text-white transition-opacity duration-300 ${
+          className={`absolute top-0 right-0 z-0 flex h-full w-26 items-center justify-center rounded-md bg-red-400 text-white transition-opacity duration-300 ${
             isSwiped ? "opacity-100" : "pointer-events-none opacity-0"
           }`}
           onClick={onDelete}
@@ -126,23 +126,29 @@ export default function TimelineCard({
 
           {/* Editing Mode */}
           {isEditing ? (
-            <div className="relative z-30 flex flex-col">
+            <div className="relative z-30 flex flex-col gap-2">
               <InputActivity
                 value={newActivity}
                 onChange={setNewActivity}
                 isEditing={isEditing}
                 autoFocus={true}
               />
-              <InputLocation
-                value={newLocation}
-                onChange={setNewLocation}
-                isEditing={isEditing}
-              />
-              <InputTime
-                value={newTime}
-                onChange={setNewTime}
-                isEditing={isEditing}
-              />
+              <div className="mt-1 flex flex-1 gap-4 flex-row justify-between">
+                <div className="flex-1">
+                  <InputLocation
+                    value={newLocation}
+                    onChange={setNewLocation}
+                    isEditing={isEditing}
+                  />
+                </div>
+                <div className="flex-1">
+                  <InputTime
+                    value={newTime}
+                    onChange={setNewTime}
+                    isEditing={isEditing}
+                  />
+                </div>
+              </div>
 
               <NotesInput
                 value={newNotes}
@@ -150,9 +156,9 @@ export default function TimelineCard({
                 isEditing={isEditing}
               />
 
-              <div className="mt-2 flex justify-end gap-4">
+              <div className="mt-2 flex justify-end-safe gap-4">
                 <button
-                  className="text-sm text-gray-500"
+                  className="rounded-md outline-1 outline-gray-400 px-4 py-1 text-sm text-gray-600"
                   onClick={(e) => {
                     e.stopPropagation();
                     if (isNew) {
@@ -166,7 +172,7 @@ export default function TimelineCard({
                 </button>
 
                 <button
-                  className="rounded-md bg-indigo-600 px-4 py-1 text-sm text-white"
+                  className="rounded-md bg-indigo-600 px-6 py-1 text-sm text-white"
                   onClick={handleSave} // 🔥 Panggil handler baru
                 >
                   Save
