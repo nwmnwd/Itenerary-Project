@@ -102,7 +102,7 @@ export default function TimelineCard({
         </div>
 
         <div
-          className={`group relative z-10 rounded-lg p-6 outline-1 -outline-offset-1 transition-transform duration-300 ${
+          className={`group relative w-full z-10 rounded-lg p-6 outline-1 -outline-offset-1 transition-transform duration-300 ${
             isActive
               ? "bg-white outline-violet-400"
               : "bg-white outline-gray-300"
@@ -133,15 +133,15 @@ export default function TimelineCard({
                 isEditing={isEditing}
                 autoFocus={true}
               />
-              <div className="mt-1 flex flex-1 gap-4 flex-row justify-between">
-                <div className="flex-1">
+              <div className="mt-1 flex  gap-4 flex-row justify-between">
+                <div className="flex-1 min-w-0">
                   <InputLocation
                     value={newLocation}
                     onChange={setNewLocation}
                     isEditing={isEditing}
                   />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <InputTime
                     value={newTime}
                     onChange={setNewTime}
@@ -156,7 +156,7 @@ export default function TimelineCard({
                 isEditing={isEditing}
               />
 
-              <div className="mt-2 flex justify-end-safe gap-4">
+              <div className="mt-2 flex justify-end gap-4">
                 <button
                   className="rounded-md outline-1 outline-gray-400 px-4 py-1 text-sm text-gray-600"
                   onClick={(e) => {
