@@ -25,7 +25,7 @@ function HighlightText({ text, query }) {
 }
 
 export default function TimelineCard({
-  id,
+
   time,
   activity,
   location,
@@ -34,7 +34,6 @@ export default function TimelineCard({
   isActive,
   onEdit,
   onDelete,
-  onPositionChange,
   searchQuery = "",
 }) {
   const [isEditing, setIsEditing] = useState(isNew || false);
@@ -46,12 +45,13 @@ export default function TimelineCard({
   const [newNotes, setNewNotes] = useState(notes || "");
   const timeRef = useRef(null);
 
+  // Update state saat props berubah
   useEffect(() => {
-    if (timeRef.current) {
-      const rect = timeRef.current.getBoundingClientRect();
-      onPositionChange?.({ id, top: rect.top + window.scrollY });
-    }
-  }, [isEditing, time, activity, location, notes]);
+    setNewActivity(activity);
+    setNewLocation(location);
+    setNewTime(time);
+    setNewNotes(notes || "");
+  }, [activity, location, time, notes]);
 
   const handlers = useSwipeable({
     onSwipedLeft: () => setIsEditing(false) || setIsSwiped(true),
@@ -173,14 +173,16 @@ export default function TimelineCard({
                 <HighlightText text={activity} query={searchQuery} />
               </h3>
 
-              {location && (
-                <div className="mt-2 mb-3 flex items-center gap-2">
-                  <PinIcon className="h-3 w-3 text-gray-400" />
-                  <div className="text-xs text-gray-400">
+              <div className="mt-2 mb-3 flex items-center gap-2">
+                <PinIcon className="h-3 w-3 text-gray-400" />
+                <div className="text-xs text-gray-400">
+                  {location ? (
                     <HighlightText text={location} query={searchQuery} />
-                  </div>
+                  ) : (
+                    <span className="text-gray-300">No location</span>
+                  )}
                 </div>
-              )}
+              </div>
 
               <NotesInput 
                 value={notes}

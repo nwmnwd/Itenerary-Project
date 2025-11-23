@@ -13,18 +13,18 @@ export default function TimelineIndicator({
     const update = () => {
       if (!containerRef.current) return;
 
-      const parent = containerRef.current.closest(".relative.flex.gap-1");
+      const parent = containerRef.current.closest('.relative.flex.gap-1');
       if (!parent) return;
 
-      const times = parent.querySelectorAll(".time-text");
+      const times = parent.querySelectorAll('.time-text');
       if (times.length !== data.length) return;
 
       const containerRect = containerRef.current.getBoundingClientRect();
 
-      const newPos = Array.from(times).map((time) => {
+      const newPos = Array.from(times).map(time => {
         const rect = time.getBoundingClientRect();
         // Posisi center dari time text
-        const timeCenter = rect.top + rect.height / 2;
+        const timeCenter = rect.top + (rect.height / 2);
         return timeCenter - containerRect.top;
       });
 
@@ -38,28 +38,28 @@ export default function TimelineIndicator({
     const t3 = setTimeout(update, 300);
     const t4 = setTimeout(update, 500);
 
-    window.addEventListener("resize", update);
-    window.addEventListener("scroll", update, true);
-
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    
     // Observe DOM changes untuk update otomatis
     const observer = new MutationObserver(update);
-    const parent = containerRef.current?.closest(".relative.flex.gap-1");
+    const parent = containerRef.current?.closest('.relative.flex.gap-1');
     if (parent) {
-      observer.observe(parent, {
-        childList: true,
-        subtree: true,
+      observer.observe(parent, { 
+        childList: true, 
+        subtree: true, 
         attributes: true,
-        characterData: true,
+        characterData: true 
       });
     }
-
+    
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
       clearTimeout(t3);
       clearTimeout(t4);
-      window.removeEventListener("resize", update);
-      window.removeEventListener("scroll", update, true);
+      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
       observer.disconnect();
     };
   }, [data.length, data]);

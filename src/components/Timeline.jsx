@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import TimelineCard from "./TimelineCard.jsx";
 import TimelineIndicator from "./TimelineIndicator.jsx";
 import { format, startOfDay } from "date-fns";
@@ -23,7 +23,7 @@ export default function Timeline({
     });
   }, [selectedDateStr, setItineraryData]);
 
-  const addItem = (dateStr) => {
+  const addItem = useCallback((dateStr) => {
     setItineraryData((prev) => ({
       ...prev,
       [dateStr]: [
@@ -38,17 +38,18 @@ export default function Timeline({
         },
       ],
     }));
-  };
+  }, [setItineraryData]);
 
   const [timelineState, setTimelineState] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     return saved ? JSON.parse(saved) : {};
   });
 
-  const getDateState = (dateStr) =>
-    timelineState[dateStr] || { currentIndex: 0, completedUpTo: -1 };
+  const getDateState = useCallback((dateStr) =>
+    timelineState[dateStr] || { currentIndex: 0, completedUpTo: -1 }
+  , [timelineState]);
 
-  const updateDateState = (dateStr, newState) => {
+  const updateDateState = useCallback((dateStr, newState) => {
     setTimelineState((prev) => {
       const updated = {
         ...prev,
@@ -60,7 +61,7 @@ export default function Timeline({
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
       return updated;
     });
-  };
+  }, []);
 
   // Sort and filter data by time and search query
   const filteredData = [...(itineraryData[selectedDateStr] || [])]
@@ -131,18 +132,18 @@ export default function Timeline({
         });
       });
     }
-  }, [selectedDateStr, todayStr, currentIndex]);
+  }, [selectedDateStr, todayStr, currentIndex, filteredData, onActiveChange, updateDateState]);
 
-  const editItem = (dateStr, id, newFields) => {
+  const editItem = useCallback((dateStr, id, newFields) => {
     setItineraryData((prev) => ({
       ...prev,
       [dateStr]: prev[dateStr].map((item) =>
         item.id === id ? { ...item, ...newFields } : item,
       ),
     }));
-  };
+  }, [setItineraryData]);
 
-  const deleteItem = (dateStr, id) => {
+  const deleteItem = useCallback((dateStr, id) => {
     setItineraryData((prev) => {
       const newData = prev[dateStr].filter((item) => item.id !== id);
       
@@ -171,21 +172,21 @@ export default function Timeline({
         [dateStr]: newData,
       };
     });
-  };
+  }, [setItineraryData, updateDateState, getDateState]);
 
   useEffect(() => {
     if (selectedDateStr === todayStr) {
       onCompletedChange?.(completedUpTo >= 0 ? completedUpTo + 1 : 0);
     }
-  }, [completedUpTo, selectedDateStr, todayStr]);
+  }, [completedUpTo, selectedDateStr, todayStr, onCompletedChange]);
 
   refs.current = filteredData.map((_, i) => refs.current[i] ?? null);
 
-  const goTo = (i) => {
+  const goTo = useCallback((i) => {
     refs.current[i]?.scrollIntoView({ behavior: "smooth", block: "center" });
-  };
+  }, []);
 
-  const handleStepClick = (i) => {
+  const handleStepClick = useCallback((i) => {
     const isToday = selectedDateStr === todayStr;
 
     if (i <= completedUpTo) {
@@ -203,13 +204,7 @@ export default function Timeline({
     onActiveChange?.(filteredData[i]);
 
     goTo(i);
-  };
-
-  const [positions, setPositions] = useState({});
-
-  const handlePosition = (id, pos) => {
-    setPositions((prev) => ({ ...prev, [id]: pos }));
-  };
+  }, [selectedDateStr, todayStr, completedUpTo, filteredData, onActiveChange, goTo, updateDateState]);
 
   return (
     <div className="mx-4 mt-5 mb-8">
@@ -224,7 +219,6 @@ export default function Timeline({
           data={filteredData}
           currentIndex={currentIndex}
           completedUpTo={completedUpTo}
-          positions={positions}
           onClick={handleStepClick}
         />
 
@@ -233,7 +227,6 @@ export default function Timeline({
             <div ref={(el) => (refs.current[i] = el)} key={item.id}>
               <TimelineCard
                 {...item}
-                onPositionChange={(pos) => handlePosition(item.id, pos)}
                 isNew={item.isNew}
                 isActive={i === currentIndex}
                 onClick={() => {
