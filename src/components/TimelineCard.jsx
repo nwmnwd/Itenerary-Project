@@ -9,23 +9,24 @@ import InputTime from "./InputTime";
 // Helper to highlight search matches
 function HighlightText({ text, query }) {
   if (!query || !text) return <>{text}</>;
-  
-  const parts = text.split(new RegExp(`(${query})`, 'gi'));
+
+  const parts = text.split(new RegExp(`(${query})`, "gi"));
   return (
     <>
-      {parts.map((part, i) => 
+      {parts.map((part, i) =>
         part.toLowerCase() === query.toLowerCase() ? (
-          <mark key={i} className="bg-yellow-200 text-gray-900">{part}</mark>
+          <mark key={i} className="bg-yellow-200 text-gray-900">
+            {part}
+          </mark>
         ) : (
           <span key={i}>{part}</span>
-        )
+        ),
       )}
     </>
   );
 }
 
 export default function TimelineCard({
-
   time,
   activity,
   location,
@@ -87,7 +88,7 @@ export default function TimelineCard({
         <div
           className={`group relative z-10 rounded-md p-4 outline-1 -outline-offset-1 transition-transform duration-300 ${
             isActive
-              ? "bg-violet-50 outline-violet-400"
+              ? "bg-white outline-violet-400"
               : "bg-white outline-gray-300"
           } ${isSwiped ? "-translate-x-24" : "translate-x-0"} `}
           {...(!isEditing ? handlers : {})}
@@ -116,18 +117,18 @@ export default function TimelineCard({
                 isEditing={isEditing}
                 autoFocus={true}
               />
-              <InputLocation 
-                value={newLocation} 
+              <InputLocation
+                value={newLocation}
                 onChange={setNewLocation}
                 isEditing={isEditing}
               />
-              <InputTime 
-                value={newTime} 
+              <InputTime
+                value={newTime}
                 onChange={setNewTime}
                 isEditing={isEditing}
               />
-              
-              <NotesInput 
+
+              <NotesInput
                 value={newNotes}
                 onChange={setNewNotes}
                 isEditing={isEditing}
@@ -184,11 +185,7 @@ export default function TimelineCard({
                 </div>
               </div>
 
-              <NotesInput 
-                value={notes}
-                onChange={() => {}}
-                isEditing={false}
-              />
+              <NotesInput value={notes} onChange={() => {}} isEditing={false} />
             </>
           )}
         </div>
