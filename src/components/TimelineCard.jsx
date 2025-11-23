@@ -136,22 +136,18 @@ export default function TimelineCard({
                 isEditing={isEditing}
                 autoFocus={true}
               />
-              <div className="mt-1 flex flex-row justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                  <InputLocation
-                    value={newLocation}
-                    onChange={setNewLocation}
-                    isEditing={isEditing}
-                  />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <InputTime
-                    value={newTime}
-                    onChange={setNewTime}
-                    isEditing={isEditing}
-                  />
-                </div>
-              </div>
+                <InputLocation
+                  value={newLocation}
+                  onChange={setNewLocation}
+                  isEditing={isEditing}
+                />
+
+                <InputTime
+                  value={newTime}
+                  onChange={setNewTime}
+                  isEditing={isEditing}
+                />
+
 
               <NotesInput
                 value={newNotes}
