@@ -1,6 +1,14 @@
 @import "tailwindcss";
 
+@layer base {
+  body {
+    font-family: var(--font-Inter, Inter, sans-serif);
+  }
+}
 
+@theme {
+  --font-Inter: Inter, sans-serif;
+}
 
 input[type="time"]::-webkit-calendar-picker-indicator {
   background: none !important;
