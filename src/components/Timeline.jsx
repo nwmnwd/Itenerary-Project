@@ -12,31 +12,14 @@ export default function Timeline({
   itineraryData,
   setItineraryData,
   searchQuery = "",
+  // 🔥 TAMBAH PROP BARU
+  isPremium,
+  onShowSubscriptionForSave,
 }) {
   const todayStr = format(startOfDay(new Date()), "yyyy-MM-dd");
   const selectedDateStr = format(selectedDay, "yyyy-MM-dd");
 
   // *** BLOK useEffect YANG BERMASALAH TELAH DIHAPUS DI SINI ***
-
-  const addItem = useCallback(
-    (dateStr) => {
-      setItineraryData((prev) => ({
-        ...prev,
-        [dateStr]: [
-          ...(prev[dateStr] || []),
-          {
-            id: crypto.randomUUID(),
-            time: "00:00",
-            activity: "",
-            location: "",
-            notes: "",
-            isNew: true,
-          },
-        ],
-      }));
-    },
-    [setItineraryData],
-  );
 
   const [timelineState, setTimelineState] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -63,6 +46,44 @@ export default function Timeline({
     });
   }, []);
 
+  const saveItem = useCallback(
+    (dateStr, id, newFields) => {
+      setItineraryData((prev) => ({
+        ...prev,
+        [dateStr]: prev[dateStr].map((item) => {
+          if (item.id === id) {
+            // 🔥 PERBAIKAN: Set isNew menjadi false secara eksplisit saat menyimpan
+            return {
+              ...item,
+              ...newFields,
+              isNew: false, // <--- INI PENTING!
+            };
+          }
+          return item;
+        }),
+      }));
+    },
+    [setItineraryData],
+  );
+  const addItem = useCallback(
+    (dateStr) => {
+      setItineraryData((prev) => ({
+        ...prev,
+        [dateStr]: [
+          ...(prev[dateStr] || []),
+          {
+            id: crypto.randomUUID(),
+            time: "23:59",
+            activity: "",
+            location: "",
+            notes: "",
+            isNew: true,
+          },
+        ],
+      }));
+    },
+    [setItineraryData],
+  );
   // Sort and filter data by time and search query
   const filteredData = [...(itineraryData[selectedDateStr] || [])]
     .sort((a, b) => {
@@ -149,18 +170,6 @@ export default function Timeline({
     updateDateState,
   ]);
 
-  const editItem = useCallback(
-    (dateStr, id, newFields) => {
-      setItineraryData((prev) => ({
-        ...prev,
-        [dateStr]: prev[dateStr].map((item) =>
-          item.id === id ? { ...item, ...newFields } : item,
-        ),
-      }));
-    },
-    [setItineraryData],
-  );
-
   const deleteItem = useCallback(
     (dateStr, id) => {
       setItineraryData((prev) => {
@@ -206,6 +215,34 @@ export default function Timeline({
       });
     },
     [setItineraryData, updateDateState, getDateState],
+  );
+
+  const handleSaveAttempt = useCallback(
+    (itemId, activityData, isNew, setEditingToFalse) => {
+      const dateStr = selectedDateStr; // Tanggal saat ini
+
+      // 1. Cek Premium hanya jika ini item baru
+      if (isNew && !isPremium && onShowSubscriptionForSave) {
+        // Hapus kartu kosong (kartu yang baru dibuat) segera
+        deleteItem(dateStr, itemId);
+
+        // Panggil modal, kirim data aktivitas yang akan disimpan
+        onShowSubscriptionForSave(activityData, dateStr);
+        setEditingToFalse(); // Tutup mode edit
+        return;
+      }
+
+      // 2. Jika Premium ATAU item lama, langsung simpan
+      saveItem(dateStr, itemId, activityData);
+      setEditingToFalse();
+    },
+    [
+      isPremium,
+      onShowSubscriptionForSave,
+      selectedDateStr,
+      saveItem,
+      deleteItem,
+    ],
   );
 
   useEffect(() => {
@@ -263,7 +300,7 @@ export default function Timeline({
         </div>
       )}
 
-      <div className="relative flex gap-1">
+      <div className="relative flex gap-1 px-2">
         <TimelineIndicator
           data={filteredData}
           currentIndex={currentIndex}
@@ -271,7 +308,7 @@ export default function Timeline({
           onClick={handleStepClick}
         />
 
-        <div className="flex flex-1 flex-col gap-4">
+        <div className="flex flex-1 flex-col gap-6">
           {filteredData.map((item, i) => (
             <div ref={(el) => (refs.current[i] = el)} key={item.id}>
               <TimelineCard
@@ -283,7 +320,20 @@ export default function Timeline({
                   onActiveChange?.(filteredData[i]);
                   goTo(i);
                 }}
-                onEdit={(fields) => editItem(selectedDateStr, item.id, fields)}
+                // 🔥 GANTI onEdit DENGAN onSaveAttempt
+                onSaveAttempt={(
+                  itemId,
+                  activityData,
+                  isNew,
+                  setEditingToFalse,
+                ) =>
+                  handleSaveAttempt(
+                    itemId,
+                    activityData,
+                    isNew,
+                    setEditingToFalse,
+                  )
+                }
                 onDelete={() => deleteItem(selectedDateStr, item.id)}
                 searchQuery={searchQuery}
               />
@@ -291,7 +341,7 @@ export default function Timeline({
           ))}
 
           <button
-            className="w-full rounded-md bg-violet-600 py-2 text-white hover:bg-violet-900"
+            className="w-full rounded-md bg-violet-600 py-2 text-lg text-white hover:bg-violet-900"
             onClick={() => addItem(selectedDateStr)}
           >
             + New Activity

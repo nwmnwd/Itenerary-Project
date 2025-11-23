@@ -4,18 +4,20 @@ export default function InputLocation({ value, onChange, isEditing }) {
   if (!isEditing) return null; // kalau tidak edit, tidak tampil
 
   return (
-    <div className="flex items-center rounded-md">
-      <div className="shrink-0 pr-1.5 text-base text-gray-500 select-none sm:text-sm/6">
-        <PinIcon className="h-3 w-3" />
+
+      <div className="flex items-center mt-1.5">
+        <div className="shrink-0 pr-1.5 text-base text-gray-500 select-none sm:text-sm/6">
+          <PinIcon className="h-3.5 w-3.5" />
+        </div>
+        <input
+          type="search"
+          name="location"
+          placeholder="Location"
+          className="block min-w-0 grow pr-3 py-1 pl-1 text-sm text-gray-500 placeholder:text-gray-400 focus:outline-none"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
       </div>
-      <input
-        type="search"
-        name="location"
-        placeholder="Location"
-        className="block min-w-0 grow py-0 pr-3 pl-1 text-xs text-black placeholder:text-gray-500 focus:outline-none"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      />
-    </div>
+
   );
 }

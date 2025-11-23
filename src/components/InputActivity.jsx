@@ -13,8 +13,8 @@ export default function InputActivity({
       <input
         type="text"
         name="activity"
-        placeholder=""
-        className="text-md block min-w-0 grow py-0 pl-1 font-semibold text-gray-900 caret-violet-800 placeholder:text-gray-500 focus:outline-none "
+        placeholder="Add Activity"
+        className="text-lg block min-w-0 grow font-semibold text-gray-900 caret-violet-800 placeholder:text-gray-500 focus:outline-none "
         value={value}
         onChange={(e) => onChange(e.target.value)}
         autoFocus={autoFocus}

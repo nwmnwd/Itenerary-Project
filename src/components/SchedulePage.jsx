@@ -1,6 +1,6 @@
 // SchedulePage.jsx (KODE PERBAIKAN LENGKAP)
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import Calendar from "./Calendar";
 import Timeline from "./Timeline";
 import Header from "./Header";
@@ -11,6 +11,10 @@ import {
   differenceInCalendarDays,
   format,
 } from "date-fns";
+import SubscriptionModal from "./SubscriptionModal";
+
+// 🔥 KUNCI LOCAL STORAGE UNTUK STATUS PREMIUM
+const PREMIUM_STORAGE_KEY = "user_is_premium";
 
 export default function SchedulePage() {
   const [selectedDay, setSelectedDay] = useState(() => startOfDay(new Date()));
@@ -19,6 +23,19 @@ export default function SchedulePage() {
   const [todayCurrentActivity, setTodayCurrentActivity] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
 
+// 櫨 STATE BARU UNTUK FITUR PREMIUM (TELAH DIPERBAIKI UNTUK MEMBACA DARI LOCALSTORAGE)
+  const [isPremium, setIsPremium] = useState(() => {
+    try {
+        const saved = localStorage.getItem(PREMIUM_STORAGE_KEY);
+        // Memuat status dari localStorage: jika tersimpan 'true', maka isPremium = true
+        return saved === "true";
+    } catch {
+        return false;
+    }
+  }); 
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [pendingActivity, setPendingActivity] = useState(null); 
+  const [pendingDateStr, setPendingDateStr] = useState(null);
   // Load itinerary data once
   const [itineraryData, setItineraryData] = useState(() => {
     try {
@@ -29,21 +46,16 @@ export default function SchedulePage() {
     }
   });
 
-  // 🔥 PERBAIKAN UTAMA: INISIALISASI DATA DI KOMPONEN INDUK
-  // Ini memastikan setiap tanggal yang dipilih memiliki array kosong di itineraryData.
   useEffect(() => {
     const selectedDateStr = format(selectedDay, "yyyy-MM-dd");
 
     setItineraryData((prev) => {
-      // Jika data untuk tanggal ini sudah ada, jangan lakukan apa-apa
       if (prev[selectedDateStr]) return prev;
 
-      // Jika belum ada, inisialisasi dengan array kosong
-      console.log(`[SchedulePage] Initializing data for ${selectedDateStr}`);
       return { ...prev, [selectedDateStr]: [] };
     });
-  }, [selectedDay]); // Cukup bergantung pada selectedDay
-  // 🔥 END PERBAIKAN
+  }, [selectedDay, setItineraryData]); 
+  // 櫨 END PERBAIKAN
 
   useEffect(() => {
     try {
@@ -61,6 +73,41 @@ export default function SchedulePage() {
     }
   }, [itineraryData]);
 
+  // 櫨 FUNGSI BARU: MENANGANI PEMBAYARAN SUKSES (TELAH DIPERBAIKI UNTUK MENYIMPAN KE LOCALSTORAGE)
+  const handlePaymentSuccess = useCallback(() => {
+    // 1. Ubah status premium pengguna DAN SIMPAN STATUSNYA
+    setIsPremium(true);
+    localStorage.setItem(PREMIUM_STORAGE_KEY, "true"); // 🔥 TAMBAHAN PENTING
+
+    // 2. Tutup modal
+    setShowSubscriptionModal(false);
+
+    // 3. Simpan aktivitas yang tertunda (sama seperti addItem di Timeline)
+    if (pendingActivity && pendingDateStr) {
+        setItineraryData((prev) => ({
+            ...prev,
+            [pendingDateStr]: [
+                ...(prev[pendingDateStr] || []),
+                {
+                    id: crypto.randomUUID(), 
+                    ...pendingActivity, // Data yang sudah diisi pengguna
+                    isNew: false, // Disimpan sebagai item normal
+                },
+            ],
+        }));
+        setPendingActivity(null); 
+        setPendingDateStr(null);
+    }
+  }, [setItineraryData, pendingActivity, pendingDateStr]);
+
+  // 櫨 FUNGSI BARU: MENAMPILKAN MODAL LANGGANAN
+const handleShowSubscriptionForSave = useCallback((activityData, dateStr) => {
+    setPendingActivity(activityData);
+    setPendingDateStr(dateStr);
+    setShowSubscriptionModal(true);
+  }, []);
+// ... (sisa kode)
+// ... (sisa kode)
   const selectedDayRef = useRef(selectedDay);
   useEffect(() => {
     selectedDayRef.current = selectedDay;
@@ -175,8 +222,21 @@ export default function SchedulePage() {
           itineraryData={itineraryData}
           setItineraryData={setItineraryData}
           searchQuery={searchQuery}
+          isPremium={isPremium}
+          onShowSubscriptionForSave={handleShowSubscriptionForSave}
         />
       </main>
+      {/* 櫨 TAMPILKAN KOMPONEN SUBSCRIPTION MODAL DI SINI */}
+      {showSubscriptionModal && (
+        <SubscriptionModal 
+          onPaymentSuccess={handlePaymentSuccess}
+          onClose={() => {
+              setShowSubscriptionModal(false);
+              setPendingActivity(null);
+              setPendingDateStr(null);
+          }}
+        />
+      )}
     </div>
   );
 }

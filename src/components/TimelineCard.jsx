@@ -27,17 +27,18 @@ function HighlightText({ text, query }) {
 }
 
 export default function TimelineCard({
+  id, // 🔥 Pastikan ID diterima
   time,
   activity,
   location,
   notes,
   isNew,
   isActive,
-  onEdit,
   onDelete,
   searchQuery = "",
+  onSaveAttempt,
 }) {
-  const [isEditing, setIsEditing] = useState(isNew || false);
+  const [isEditing, setIsEditing] = useState(isNew);
   const [isSwiped, setIsSwiped] = useState(false);
 
   const [newActivity, setNewActivity] = useState(activity);
@@ -59,9 +60,24 @@ export default function TimelineCard({
     onSwipedRight: () => setIsSwiped(false),
     preventScrollOnSwipe: true,
     trackTouch: true,
-    trackMouse: false,
+    trackMouse: true,
   });
+  // 🔥 FUNGSI BARU: MENGIRIM UPAYA SAVE
+  const handleSave = (e) => {
+    e.stopPropagation();
 
+    const activityData = {
+      activity: newActivity || "No Activity",
+      location: newLocation,
+      time: newTime || "--:--",
+      notes: newNotes,
+    };
+
+    // Kirim data lengkap ke Timeline, yang akan melakukan cek premium
+    onSaveAttempt?.(id, activityData, isNew, () => setIsEditing(false));
+  };
+
+  // ... (Logika useEffect untuk isNew)
   return (
     <div className="relative" style={{ touchAction: "pan-y" }}>
       {/* Time - dengan height tetap untuk konsistensi */}
@@ -86,7 +102,7 @@ export default function TimelineCard({
         </div>
 
         <div
-          className={`group relative z-10 rounded-md p-4 outline-1 -outline-offset-1 transition-transform duration-300 ${
+          className={`group relative z-10 rounded-lg p-6 outline-1 -outline-offset-1 transition-transform duration-300 ${
             isActive
               ? "bg-white outline-violet-400"
               : "bg-white outline-gray-300"
@@ -110,7 +126,7 @@ export default function TimelineCard({
 
           {/* Editing Mode */}
           {isEditing ? (
-            <div className="relative z-30 flex flex-col gap-1">
+            <div className="relative z-30 flex flex-col">
               <InputActivity
                 value={newActivity}
                 onChange={setNewActivity}
@@ -134,35 +150,24 @@ export default function TimelineCard({
                 isEditing={isEditing}
               />
 
-              <div className="mt-2 flex justify-end gap-2">
+              <div className="mt-2 flex justify-end gap-4">
                 <button
-                  className="text-xs text-gray-500"
+                  className="text-sm text-gray-500"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setIsEditing(false);
-                    // Reset to original values
-                    setNewActivity(activity);
-                    setNewLocation(location);
-                    setNewTime(time);
-                    setNewNotes(notes || "");
+                    if (isNew) {
+                      onDelete(); // Hapus item baru jika dibatalkan
+                    } else {
+                      setIsEditing(false); // Keluar mode edit jika item lama
+                    }
                   }}
                 >
-                  Cancel
+                  Discard
                 </button>
 
                 <button
-                  className="rounded-md bg-blue-600 px-4 py-1 text-xs text-white"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit?.({
-                      activity: newActivity || "No Activity",
-                      location: newLocation,
-                      time: newTime || "--:--",
-                      notes: newNotes,
-                      isNew: false,
-                    });
-                    setIsEditing(false);
-                  }}
+                  className="rounded-md bg-indigo-600 px-4 py-1 text-sm text-white"
+                  onClick={handleSave} // 🔥 Panggil handler baru
                 >
                   Save
                 </button>
@@ -176,7 +181,7 @@ export default function TimelineCard({
 
               <div className="mt-2 mb-3 flex items-center gap-2">
                 <PinIcon className="h-3 w-3 text-gray-400" />
-                <div className="text-xs text-gray-400">
+                <div className="text-sm text-gray-400">
                   {location ? (
                     <HighlightText text={location} query={searchQuery} />
                   ) : (
@@ -184,8 +189,13 @@ export default function TimelineCard({
                   )}
                 </div>
               </div>
-
-              <NotesInput value={notes} onChange={() => {}} isEditing={false} />
+              <h3 className="text-sm">
+                <NotesInput
+                  value={notes}
+                  onChange={() => {}}
+                  isEditing={false}
+                />
+              </h3>
             </>
           )}
         </div>
