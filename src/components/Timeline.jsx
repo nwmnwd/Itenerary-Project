@@ -300,7 +300,7 @@ export default function Timeline({
         </div>
       )}
 
-      <div className="relative flex min-w-0 gap-1 px-2">
+      <div className="relative flex gap-1 px-2">
         <TimelineIndicator
           data={filteredData}
           currentIndex={currentIndex}
@@ -308,13 +308,9 @@ export default function Timeline({
           onClick={handleStepClick}
         />
 
-        <div className="gap-6min-w-0 flex flex-1 flex-col">
+        <div className="flex flex-1 flex-col gap-6">
           {filteredData.map((item, i) => (
-            <div
-              className="min-w-0"
-              ref={(el) => (refs.current[i] = el)}
-              key={item.id}
-            >
+            <div ref={(el) => (refs.current[i] = el)} key={item.id}>
               <TimelineCard
                 {...item}
                 isNew={item.isNew}
