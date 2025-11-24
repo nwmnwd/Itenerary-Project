@@ -300,7 +300,7 @@ export default function Timeline({
         </div>
       )}
 
-      <div className="relative flex gap-4 px-2">
+      <div className="relative flex gap-1 px-2">
         <TimelineIndicator
           data={filteredData}
           currentIndex={currentIndex}

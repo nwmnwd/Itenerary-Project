@@ -1,7 +1,7 @@
 function NotesInput({ value, onChange, isEditing }) {
   if (isEditing) {
     return (
-      <div className="mt-1.5 flex items-center rounded-md px-2 outline-1 outline-gray-300">
+      <div className="mt-1.5 flex items-center rounded-md px-2 outline-1 outline-gray-400">
         <input
           type="text"
           name="notes"
