@@ -14,7 +14,7 @@ export default function InputLocation({ value, onChange, isEditing }) {
           type="search"
           name="location"
           placeholder="Location"
-          className="block w-full min-w-0 grow py-1 pr-3 pl-1 text-sm text-gray-500 placeholder:text-gray-400 focus:outline-none"
+          className="block w-full min-w-0 grow py-1 pl-1 text-sm text-gray-500 placeholder:text-gray-400 focus:outline-none"
           value={value}
           onChange={(e) => onChange(e.target.value)}
         />
