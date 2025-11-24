@@ -1,7 +1,7 @@
 import { TimeIcon } from "../assets/icons";
 
 export default function InputTime({ value, onChange, isEditing }) {
-  if (!isEditing) return null; // kalau tidak edit, tidak tampil
+  if (!isEditing) return null;
 
   return (
     <div className="mt-1.5 flex items-center rounded-md px-2 outline-1 outline-gray-400">

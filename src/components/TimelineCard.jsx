@@ -6,7 +6,6 @@ import InputActivity from "./InputActivity";
 import InputLocation from "./InputLocation";
 import InputTime from "./InputTime";
 
-// Helper to highlight search matches
 function HighlightText({ text, query }) {
   if (!query || !text) return <>{text}</>;
 
@@ -27,7 +26,7 @@ function HighlightText({ text, query }) {
 }
 
 export default function TimelineCard({
-  id, // 🔥 Pastikan ID diterima
+  id, 
   time,
   activity,
   location,
@@ -47,7 +46,6 @@ export default function TimelineCard({
   const [newNotes, setNewNotes] = useState(notes || "");
   const timeRef = useRef(null);
 
-  // Update state saat props berubah
   useEffect(() => {
     setNewActivity(activity);
     setNewLocation(location);
@@ -62,7 +60,6 @@ export default function TimelineCard({
     trackTouch: true,
     trackMouse: true,
   });
-  // 🔥 FUNGSI BARU: MENGIRIM UPAYA SAVE
   const handleSave = (e) => {
     e.stopPropagation();
 
@@ -73,14 +70,12 @@ export default function TimelineCard({
       notes: newNotes,
     };
 
-    // Kirim data lengkap ke Timeline, yang akan melakukan cek premium
     onSaveAttempt?.(id, activityData, isNew, () => setIsEditing(false));
   };
 
-  // ... (Logika useEffect untuk isNew)
+
   return (
     <div className="relative" style={{ touchAction: "pan-y" }}>
-      {/* Time - dengan height tetap untuk konsistensi */}
       <div
         ref={timeRef}
         className="time-text text-md mb-3 font-semibold text-gray-400"
@@ -89,9 +84,8 @@ export default function TimelineCard({
         {!isEditing ? time : ""}
       </div>
 
-      {/* Card wrapper with delete button */}
+
       <div className="relative">
-        {/* Background Delete Layer */}
         <div
           className={`absolute top-0 right-0 z-0 flex h-full w-26 items-center justify-center rounded-md bg-red-400 text-white transition-opacity duration-300 ${
             isSwiped ? "opacity-100" : "pointer-events-none opacity-0"
@@ -109,7 +103,7 @@ export default function TimelineCard({
           } ${isSwiped ? "-translate-x-24" : "translate-x-0"} `}
           {...(!isEditing ? handlers : {})}
         >
-          {/* Edit button */}
+
           {!isEditing && (
             <div className="absolute top-5 right-4 flex gap-2 transition-opacity duration-200">
               <button
@@ -124,7 +118,6 @@ export default function TimelineCard({
             </div>
           )}
 
-          {/* Editing Mode */}
           {isEditing ? (
             <div className="relative z-30 flex flex-col gap-2">
               <InputActivity
@@ -162,9 +155,9 @@ export default function TimelineCard({
                   onClick={(e) => {
                     e.stopPropagation();
                     if (isNew) {
-                      onDelete(); // Hapus item baru jika dibatalkan
+                      onDelete(); 
                     } else {
-                      setIsEditing(false); // Keluar mode edit jika item lama
+                      setIsEditing(false); 
                     }
                   }}
                 >
@@ -173,7 +166,7 @@ export default function TimelineCard({
 
                 <button
                   className="rounded-md bg-indigo-600 px-6 py-1 text-sm text-white"
-                  onClick={handleSave} // 🔥 Panggil handler baru
+                  onClick={handleSave} 
                 >
                   Save
                 </button>

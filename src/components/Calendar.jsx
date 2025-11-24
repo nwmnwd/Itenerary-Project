@@ -46,7 +46,6 @@ export default function Calendar({ selectedDay, onSelectDay }) {
   return (
     <div className="pt-3">
       <div className="mx-auto max-w-4xl">
-        {/* Header */}
         <div className="flex items-center px-6">
           <h2 className="flex-auto font-semibold text-gray-900">
             {monthLabel}
@@ -67,18 +66,17 @@ export default function Calendar({ selectedDay, onSelectDay }) {
           </button>
         </div>
 
-        {/* Nama hari */}
         <div className="mt-10 grid grid-cols-7 text-center text-xs leading-6 text-gray-500">
-          <div>S</div>
-          <div>M</div>
-          <div>T</div>
-          <div>W</div>
-          <div>T</div>
-          <div>F</div>
-          <div>S</div>
+          <div>Sun</div>
+          <div>Mon</div>
+          <div>Tue</div>
+          <div>Wed</div>
+          <div>Thu</div>
+          <div>Fri</div>
+          <div>Sat</div>
         </div>
 
-        {/* Tanggal dalam minggu */}
+
         <div className="mt-2 grid grid-cols-7 text-sm">
           {days.map((day, dayIdx) => (
             <div

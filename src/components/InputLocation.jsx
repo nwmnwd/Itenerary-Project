@@ -1,7 +1,7 @@
 import { NavigationIcon, PinIcon } from "../assets/icons";
 
 export default function InputLocation({ value, onChange, isEditing }) {
-  if (!isEditing) return null; // kalau tidak edit, tidak tampil
+  if (!isEditing) return null;
 
   return (
 

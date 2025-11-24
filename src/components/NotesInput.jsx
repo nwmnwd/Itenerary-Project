@@ -6,15 +6,13 @@ function NotesInput({ value, onChange, isEditing }) {
           type="text"
           name="notes"
           placeholder="Notes"
-          className="block min-w-0 w-full grow bg-transparent py-2 pr-3 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none"
+          className="block w-full min-w-0 grow bg-transparent py-2 pr-3 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none"
           value={value || ""}
           onChange={(e) => onChange(e.target.value)}
         />
       </div>
     );
   }
-
-  // View mode - only show if there's content
   if (!value || value.trim() === "") return null;
 
   return (

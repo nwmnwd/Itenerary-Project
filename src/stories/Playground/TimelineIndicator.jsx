@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 
-export default function TimelineIndicator({
+export function TimelineIndicator({
   data,
   currentIndex,
   completedUpTo,

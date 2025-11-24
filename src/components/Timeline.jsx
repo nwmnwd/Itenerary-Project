@@ -12,14 +12,11 @@ export default function Timeline({
   itineraryData,
   setItineraryData,
   searchQuery = "",
-  // 🔥 TAMBAH PROP BARU
   isPremium,
   onShowSubscriptionForSave,
 }) {
   const todayStr = format(startOfDay(new Date()), "yyyy-MM-dd");
   const selectedDateStr = format(selectedDay, "yyyy-MM-dd");
-
-  // *** BLOK useEffect YANG BERMASALAH TELAH DIHAPUS DI SINI ***
 
   const [timelineState, setTimelineState] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -52,11 +49,10 @@ export default function Timeline({
         ...prev,
         [dateStr]: prev[dateStr].map((item) => {
           if (item.id === id) {
-            // 🔥 PERBAIKAN: Set isNew menjadi false secara eksplisit saat menyimpan
             return {
               ...item,
               ...newFields,
-              isNew: false, // <--- INI PENTING!
+              isNew: false,
             };
           }
           return item;
@@ -84,7 +80,7 @@ export default function Timeline({
     },
     [setItineraryData],
   );
-  // Sort and filter data by time and search query
+
   const filteredData = [...(itineraryData[selectedDateStr] || [])]
     .sort((a, b) => {
       const timeToMinutes = (timeStr) => {
@@ -110,7 +106,6 @@ export default function Timeline({
 
   const rawState = getDateState(selectedDateStr);
 
-  // Safely clamp indices based on current data length
   const currentIndex =
     filteredData.length === 0
       ? 0
@@ -175,7 +170,6 @@ export default function Timeline({
       setItineraryData((prev) => {
         const newData = prev[dateStr].filter((item) => item.id !== id);
 
-        // If all items deleted, reset state
         if (newData.length === 0) {
           requestAnimationFrame(() => {
             updateDateState(dateStr, {
@@ -184,7 +178,6 @@ export default function Timeline({
             });
           });
         } else {
-          // Adjust indices if needed
           const state = getDateState(dateStr);
           const newCurrentIndex = Math.min(
             state.currentIndex,
@@ -219,20 +212,16 @@ export default function Timeline({
 
   const handleSaveAttempt = useCallback(
     (itemId, activityData, isNew, setEditingToFalse) => {
-      const dateStr = selectedDateStr; // Tanggal saat ini
+      const dateStr = selectedDateStr;
 
-      // 1. Cek Premium hanya jika ini item baru
       if (isNew && !isPremium && onShowSubscriptionForSave) {
-        // Hapus kartu kosong (kartu yang baru dibuat) segera
         deleteItem(dateStr, itemId);
 
-        // Panggil modal, kirim data aktivitas yang akan disimpan
         onShowSubscriptionForSave(activityData, dateStr);
-        setEditingToFalse(); // Tutup mode edit
+        setEditingToFalse();
         return;
       }
 
-      // 2. Jika Premium ATAU item lama, langsung simpan
       saveItem(dateStr, itemId, activityData);
       setEditingToFalse();
     },
@@ -308,7 +297,7 @@ export default function Timeline({
           onClick={handleStepClick}
         />
 
-        <div className="flex flex-1 min-w-0 flex-col gap-6">
+        <div className="flex min-w-0 flex-1 flex-col gap-6">
           {filteredData.map((item, i) => (
             <div ref={(el) => (refs.current[i] = el)} key={item.id}>
               <TimelineCard
@@ -320,7 +309,6 @@ export default function Timeline({
                   onActiveChange?.(filteredData[i]);
                   goTo(i);
                 }}
-                // 🔥 GANTI onEdit DENGAN onSaveAttempt
                 onSaveAttempt={(
                   itemId,
                   activityData,

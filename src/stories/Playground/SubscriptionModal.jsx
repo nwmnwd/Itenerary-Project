@@ -77,7 +77,7 @@ const PaymentForm = ({ onPaymentSuccess, onCancel }) => {
           ) : (
             <>
               <p className="mb-6 text-2xl font-semibold dark:text-white">
-                Total: 0 IDR
+                Total: $ 0
               </p>
               <button
                 onClick={handlePay}
@@ -99,9 +99,8 @@ const PaymentForm = ({ onPaymentSuccess, onCancel }) => {
   );
 };
 
-
-export default function SubscriptionModal({ onPaymentSuccess, onClose }) {
-  const [stage, setStage] = useState("plan"); 
+export function SubscriptionModal({ onPaymentSuccess, onClose }) {
+  const [stage, setStage] = useState("plan");
 
   const handleChoosePlan = () => {
     setStage("payment");
@@ -119,7 +118,7 @@ export default function SubscriptionModal({ onPaymentSuccess, onClose }) {
     <div className="bg-opacity-50 fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-white">
       <div className="min-h-screen w-full sm:max-w-lg">
         {stage === "plan" && (
-          <div className="relative isolate rounded-xl bg-white px-6 py-8 shadow-2xl sm:py-16 lg:px-8 dark:bg-gray-900">
+          <div className="relative isolate bg-white px-6 py-8 shadow-2xl sm:py-16 lg:px-8 dark:bg-gray-900">
             <div className="mx-auto max-w-4xl text-center">
               <h2 className="text-base/7 font-semibold text-indigo-600 dark:text-indigo-400">
                 Premium Access
@@ -129,9 +128,7 @@ export default function SubscriptionModal({ onPaymentSuccess, onClose }) {
               </p>
             </div>
 
-
             <div className="mx-auto mt-16 grid max-w-lg grid-cols-1 items-center gap-y-6 sm:mt-20">
-
               <div className="rounded-3xl bg-white/60 p-8 ring-1 ring-gray-900/10 sm:p-10 dark:bg-white/2.5 dark:ring-white/10">
                 <h3
                   id="tier-hobby"
@@ -141,7 +138,7 @@ export default function SubscriptionModal({ onPaymentSuccess, onClose }) {
                 </h3>
                 <p className="mt-4 flex items-baseline gap-x-2">
                   <span className="text-5xl font-semibold tracking-tight text-gray-900 dark:text-white">
-                    0 IDR
+                    $ 0
                   </span>
                   <span className="text-base text-gray-500 dark:text-gray-400">
                     / forever
@@ -188,8 +185,8 @@ export default function SubscriptionModal({ onPaymentSuccess, onClose }) {
                   Premium
                 </h3>
                 <p className="mt-4 flex items-baseline gap-x-2">
-                  <span className="text-4xl font-semibold tracking-tight text-white">
-                    0 IDR
+                  <span className="text-5xl font-semibold tracking-tight text-white">
+                    $ 0
                   </span>
                   <span className="text-base text-gray-400">/ month</span>
                 </p>

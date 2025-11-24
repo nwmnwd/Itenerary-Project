@@ -6,7 +6,7 @@ export default function InputActivity({
   isEditing,
   autoFocus,
 }) {
-  if (!isEditing) return null; // kalau tidak edit, tidak tampil
+  if (!isEditing) return null;
 
   return (
     <div className="flex items-center rounded-md">
