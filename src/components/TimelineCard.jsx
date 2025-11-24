@@ -96,10 +96,10 @@ export default function TimelineCard({
         </div>
 
         <div
-          className={`group relative z-10 rounded-lg p-6 outline-1 -outline-offset-1 transition-transform duration-300 ${
+          className={`group relative z-10 rounded-xl p-6  transition-transform duration-300 ${
             isActive
-              ? "bg-white outline-violet-400"
-              : "bg-white outline-gray-300"
+              ? " bg-white border-l-3 border-violet-600 shadow-md"
+              : "bg-white outline-gray-300 shadow-md"
           } ${isSwiped ? "-translate-x-24" : "translate-x-0"} `}
           {...(!isEditing ? handlers : {})}
         >
@@ -174,7 +174,7 @@ export default function TimelineCard({
             </div>
           ) : (
             <>
-              <h3 className="text-md font-semibold">
+              <h3 className="text-md font-semibold text-violet-800">
                 <HighlightText text={activity} query={searchQuery} />
               </h3>
 
