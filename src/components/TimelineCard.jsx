@@ -136,18 +136,18 @@ export default function TimelineCard({
                 isEditing={isEditing}
                 autoFocus={true}
               />
+              <div className="md:flex md:flex-row flex-col justify-between">
                 <InputLocation
                   value={newLocation}
                   onChange={setNewLocation}
                   isEditing={isEditing}
                 />
-
                 <InputTime
                   value={newTime}
                   onChange={setNewTime}
                   isEditing={isEditing}
                 />
-
+              </div>
 
               <NotesInput
                 value={newNotes}
@@ -155,7 +155,7 @@ export default function TimelineCard({
                 isEditing={isEditing}
               />
 
-              <div className="mt-2 flex justify-end gap-4">
+              <div className="mt-2 flex flex-1 justify-end gap-4">
                 <button
                   className="rounded-md px-4 py-1 text-sm text-gray-600 outline-1 outline-gray-400"
                   onClick={(e) => {
