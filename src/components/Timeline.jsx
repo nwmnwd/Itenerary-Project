@@ -308,7 +308,7 @@ export default function Timeline({
           onClick={handleStepClick}
         />
 
-        <div className="flex flex-1 flex-col gap-6">
+        <div className="flex flex-1 min-w-0 flex-col gap-6">
           {filteredData.map((item, i) => (
             <div ref={(el) => (refs.current[i] = el)} key={item.id}>
               <TimelineCard
