@@ -78,7 +78,7 @@ export default function TimelineCard({
     <div className="relative" style={{ touchAction: "pan-y" }}>
       <div
         ref={timeRef}
-        className="time-text text-md mb-3 font-semibold text-gray-400"
+        className="time-text text-md pl-5.5 mb-3 font-semibold text-gray-400"
         style={{ minHeight: "24px", lineHeight: "24px" }}
       >
         {!isEditing ? time : ""}
@@ -96,10 +96,10 @@ export default function TimelineCard({
         </div>
 
         <div
-          className={`group relative z-10 rounded-xl p-6  transition-transform duration-300 ${
+          className={`group relative z-10 rounded-lg p-6  transition-transform duration-300 ${
             isActive
-              ? " bg-white border-l-3 border-violet-600 shadow-md"
-              : "bg-white outline-gray-300 shadow-md"
+              ? " bg-gray-50 border-l border-violet-600 shadow-sm"
+              : "bg-gray-50 outline-gray-300 shadow-md"
           } ${isSwiped ? "-translate-x-24" : "translate-x-0"} `}
           {...(!isEditing ? handlers : {})}
         >
