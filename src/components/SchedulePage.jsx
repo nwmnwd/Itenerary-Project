@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+
 import Calendar from "./Calendar";
 import Timeline from "./Timeline";
 import Header from "./Header";
@@ -10,6 +11,8 @@ import {
   format,
 } from "date-fns";
 import SubscriptionModal from "./SubscriptionModal";
+import { ChevronUpIcon } from "@heroicons/react/solid";
+import { CalendarDate } from "../assets/icons";
 
 // local storage premium
 const PREMIUM_STORAGE_KEY = "user_is_premium";
@@ -20,6 +23,8 @@ export default function SchedulePage() {
   const [completedCount, setCompletedCount] = useState(0);
   const [todayCurrentActivity, setTodayCurrentActivity] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const [isPremium, setIsPremium] = useState(() => {
     try {
@@ -170,23 +175,45 @@ export default function SchedulePage() {
     return (itineraryData[todayDateStr] || []).length;
   }, [itineraryData, todayDateStr]);
 
+  const ToggleIcon = isCalendarOpen ? ChevronUpIcon : CalendarDate;
+
   return (
     <div className="flex min-h-screen flex-col">
-      <Header
-        todayCurrentActivity={
-          todayCurrentActivity == null
-            ? todayFirstActivity
-            : todayCurrentActivity
-        }
-        completedCount={completedCount}
-        totalItems={todayTotalItems}
-        dayNumber={todayDayNumber}
-      />
+      <div className="sticky top-0 z-50 bg-white shadow-md">
+        <Header
+          todayCurrentActivity={
+            todayCurrentActivity == null
+              ? todayFirstActivity
+              : todayCurrentActivity
+          }
+          completedCount={completedCount}
+          totalItems={todayTotalItems}
+          dayNumber={todayDayNumber}
+        />
 
-      <div className="sticky top-0 z-30 bg-white pb-2">
-        <div className="mx-2 mt-4">
-          <Calendar selectedDay={selectedDay} onSelectDay={setSelectedDay} />
-          <SearchBox value={searchQuery} onChange={setSearchQuery} />
+        <div className="mx-2 mt-2 bg-white pb-2">
+          <div
+            id="calendar-panel"
+            className={`overflow-hidden transition-all duration-300 ease-in-out ${
+              isCalendarOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+            }`}
+          >
+            <Calendar selectedDay={selectedDay} onSelectDay={setSelectedDay} />
+          </div>
+
+          <div className="flex flex-row items-center gap-2.5">
+            <div className="flex-1">
+              <SearchBox value={searchQuery} onChange={setSearchQuery} />
+            </div>
+            <button
+              onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+              className="rounded-full pr-4 text-violet-900 transition-colors hover:bg-gray-100"
+              aria-expanded={isCalendarOpen}
+              aria-controls="calendar-panel"
+            >
+              <ToggleIcon className="h-8 w-8" />
+            </button>
+          </div>
         </div>
       </div>
 

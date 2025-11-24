@@ -132,7 +132,7 @@ export default function Timeline({
 
         requestAnimationFrame(() => {
           onActiveChange?.(filteredData[0]);
-          refs.current[0]?.scrollIntoView({ behavior: "auto", block: "end" });
+          refs.current[0]?.scrollIntoView({ behavior: "auto", block: "center" });
         });
       } else {
         requestAnimationFrame(() => {
