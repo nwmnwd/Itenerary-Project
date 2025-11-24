@@ -133,7 +133,7 @@ export default function TimelineCard({
                 isEditing={isEditing}
                 autoFocus={true}
               />
-              <div className="mt-1 flex flex-1 gap-4 flex-row justify-between">
+              <div className="mt-1 flex flex-1 gap-2 flex-row justify-between">
                 <div className="flex-1">
                   <InputLocation
                     value={newLocation}
