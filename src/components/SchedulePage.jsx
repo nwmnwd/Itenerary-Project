@@ -179,7 +179,7 @@ export default function SchedulePage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <div className="sticky top-0 z-50 bg-white shadow-md">
+      <div className="sticky top-0 z-50 bg-white shadow-xs">
         <Header
           todayCurrentActivity={
             todayCurrentActivity == null
@@ -207,7 +207,7 @@ export default function SchedulePage() {
             </div>
             <button
               onClick={() => setIsCalendarOpen(!isCalendarOpen)}
-              className="rounded-full pr-4 text-violet-900 transition-colors hover:bg-gray-100"
+              className="rounded-full pr-4 text-indigo-500 transition-colors hover:bg-gray-100"
               aria-expanded={isCalendarOpen}
               aria-controls="calendar-panel"
             >
