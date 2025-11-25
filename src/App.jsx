@@ -10,26 +10,65 @@ function App() {
   useEffect(() => {
     async function runOneSignal() {
       try {
+        // Initialize OneSignal
         await OneSignal.init({
           appId: "48d40efc-bfd6-44f5-ada5-30f2d1a17718",
           allowLocalhostAsSecureOrigin: true,
         });
 
-        // Request permission
-        const permission = await OneSignal.Notifications.requestPermission();
-        console.log("Permission:", permission);
+        console.log("OneSignal initialized successfully");
 
-        // Subscribe push
-        const sub = await OneSignal.User.PushSubscription.subscribe();
-        console.log("Subscribed:", sub);
+        // Check if notifications are supported
+        if (!OneSignal.Notifications.isPushSupported()) {
+          console.error("Push notifications are not supported");
+          return;
+        }
 
-        // Listener player ID
-        OneSignal.User.PushSubscription.addEventListener("change", (event) => {
-          console.log("OneSignal Subscription Changed:", event);
+        // Check current permission status
+        const currentPermission = OneSignal.Notifications.permission;
+        console.log("Current permission:", currentPermission);
+
+        // Request permission if not already granted
+        if (currentPermission !== "granted") {
+          const permission = await OneSignal.Notifications.requestPermission();
+          console.log("Permission result:", permission);
+        }
+
+        // Check if user is subscribed
+        const isSubscribed = await OneSignal.User.PushSubscription.optedIn;
+        console.log("Is subscribed:", isSubscribed);
+
+        // Subscribe if not already subscribed
+        if (!isSubscribed) {
+          await OneSignal.User.PushSubscription.optIn();
+          console.log("User opted in to push notifications");
+        }
+
+        // Get subscription ID (Player ID)
+        const subscriptionId = OneSignal.User.PushSubscription.id;
+        console.log("🎯 Subscription ID (Player ID):", subscriptionId);
+
+        // Get OneSignal User ID (External ID)
+        const userId = OneSignal.User.onesignalId;
+        console.log("🎯 OneSignal User ID:", userId);
+
+        // Debug: Log full subscription object
+        console.log("Full PushSubscription object:", {
+          id: OneSignal.User.PushSubscription.id,
+          token: OneSignal.User.PushSubscription.token,
+          optedIn: await OneSignal.User.PushSubscription.optedIn
         });
 
-        const playerId = await OneSignal.User.PushSubscription.id;
-        console.log("🎯 Current Player ID:", playerId);
+        // Listen for subscription changes
+        OneSignal.User.PushSubscription.addEventListener("change", (event) => {
+          console.log("Subscription changed:", event);
+          console.log("New subscription ID:", event.current.id);
+        });
+
+        // Optional: Send a test notification tag
+        await OneSignal.User.addTag("test_user", "true");
+        console.log("Test tag added");
+
       } catch (error) {
         console.error("Error initializing OneSignal:", error);
       }
