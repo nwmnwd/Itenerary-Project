@@ -1,8 +1,15 @@
 {
   "version": 2,
   "functions": {
-    "api/*.js": {
-      "runtime": "nodejs18.x"
+    "api/schedule-reminder.js": {
+      "runtime": "nodejs20.x"
     }
-  }
+  },
+  "routes": [
+    {
+      "src": "/api/schedule-reminder",
+      "dest": "/api/schedule-reminder.js",
+      "methods": ["POST"]
+    }
+  ]
 }
