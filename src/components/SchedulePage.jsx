@@ -9,6 +9,9 @@ import {
   parseISO,
   differenceInCalendarDays,
   format,
+  setMinutes, // <-- Baru: dari date-fns
+  setHours, // <-- Baru: dari date-fns
+  subMinutes,
 } from "date-fns";
 import SubscriptionModal from "./SubscriptionModal";
 import { ChevronUpIcon } from "@heroicons/react/solid";
@@ -16,6 +19,21 @@ import { CalendarDate } from "../assets/icons";
 
 // local storage premium
 const PREMIUM_STORAGE_KEY = "user_is_premium";
+
+const calculateReminderTime = (dateStr, timeStr) => {
+  const [hours, minutes] = timeStr.split(":").map(Number);
+
+  // 1. Gabungkan tanggal dan waktu menjadi objek Date
+  let reminderDate = parseISO(dateStr);
+  reminderDate = setHours(reminderDate, hours);
+  reminderDate = setMinutes(reminderDate, minutes);
+
+  // 2. Kurangi 5 menit dari waktu tersebut
+  const finalReminderTime = subMinutes(reminderDate, 5);
+
+  // 3. Format ke string ISO 8601 yang dibutuhkan OneSignal
+  return format(finalReminderTime, "yyyy-MM-dd'T'HH:mm:ss'Z'");
+};
 
 export default function SchedulePage() {
   const [selectedDay, setSelectedDay] = useState(() => startOfDay(new Date()));
@@ -45,6 +63,36 @@ export default function SchedulePage() {
       return {};
     }
   });
+
+  const scheduleNewReminder = useCallback(
+    async (title, content, deliveryTime) => {
+      try {
+        const response = await fetch("/api/schedule-reminder", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: title,
+            content: content,
+            deliveryTime: deliveryTime, // Format ISO 8601
+          }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          console.log("Notifikasi berhasil dijadwalkan!", data.notificationId);
+        } else {
+          // Tangani error dari Serverless Function
+          console.error("Gagal menjadwalkan notifikasi:", data);
+        }
+      } catch (error) {
+        console.error("Error saat fetch API:", error);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     const selectedDateStr = format(selectedDay, "yyyy-MM-dd");
@@ -78,27 +126,47 @@ export default function SchedulePage() {
     setShowSubscriptionModal(false);
 
     if (pendingActivity && pendingDateStr) {
+      const newActivity = {
+        id: crypto.randomUUID(),
+        ...pendingActivity,
+        isNew: false,
+      };
+
+      // 1. JADWALKAN PENGINGAT (HANYA JIKA ADA PENDING ACTIVITY)
+      try {
+        const title = pendingActivity.name || "Aktivitas";
+        const deliveryTimeISO = calculateReminderTime(
+          pendingDateStr,
+          pendingActivity.time,
+        );
+
+        scheduleNewReminder(
+          `Pengingat: ${title}`,
+          `Aktivitasmu akan dimulai pukul ${pendingActivity.time}!`,
+          deliveryTimeISO,
+        );
+      } catch (e) {
+        console.error("Gagal menghitung waktu pengingat:", e);
+      }
+
+      // 2. SIMPAN DATA JADWAL
       setItineraryData((prev) => ({
         ...prev,
-        [pendingDateStr]: [
-          ...(prev[pendingDateStr] || []),
-          {
-            id: crypto.randomUUID(),
-            ...pendingActivity,
-            isNew: false,
-          },
-        ],
+        [pendingDateStr]: [...(prev[pendingDateStr] || []), newActivity],
       }));
+
       setPendingActivity(null);
       setPendingDateStr(null);
     }
-  }, [setItineraryData, pendingActivity, pendingDateStr]);
+  }, [setItineraryData, pendingActivity, pendingDateStr, scheduleNewReminder]);
 
   const handleShowSubscriptionForSave = useCallback((activityData, dateStr) => {
     setPendingActivity(activityData);
     setPendingDateStr(dateStr);
     setShowSubscriptionModal(true);
   }, []);
+
+  
   const selectedDayRef = useRef(selectedDay);
   useEffect(() => {
     selectedDayRef.current = selectedDay;
