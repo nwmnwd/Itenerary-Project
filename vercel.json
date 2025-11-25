@@ -4,10 +4,11 @@
       "runtime": "nodejs18.x"
     }
   },
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/schedule-reminder",
-      "destination": "/api/schedule-reminder.js"
+      "src": "/api/schedule-reminder",
+      "dest": "/api/schedule-reminder.js",
+      "methods": ["POST"]
     }
   ]
 }
