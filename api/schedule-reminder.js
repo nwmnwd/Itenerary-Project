@@ -76,11 +76,7 @@ export default async function handler(req, res) {
           type: 'activity_reminder',
           scheduled_time: deliveryTime,
           timestamp: Date.now()
-        },
-
-        // Untuk web push
-        web_url: typeof window !== 'undefined' ? window.location.origin : undefined,
-        chrome_web_icon: 'https://your-icon-url.com/icon.png', // Ganti dengan icon Anda
+        }
       }),
     });
 
