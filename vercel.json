@@ -1,14 +1,8 @@
 {
   "functions": {
     "api/schedule-reminder.js": {
-      "runtime": "nodejs20.x"
+      "memory": 1024,
+      "maxDuration": 10
     }
-  },
-  "routes": [
-    {
-      "src": "/api/schedule-reminder",
-      "dest": "/api/schedule-reminder.js",
-      "methods": ["POST"]
-    }
-  ]
+  }
 }
