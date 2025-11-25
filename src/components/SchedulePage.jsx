@@ -77,10 +77,11 @@ export default function SchedulePage() {
 const scheduleNewReminder = useCallback(
   async (title, content, deliveryTime) => {
     try {
+      // deliveryTime sudah dalam format: "2025-11-25 23:10:00 GMT+0800"
       console.log("📤 Sending notification:", {
         title,
         content,
-        deliveryTime, // Ini sudah dalam format "YYYY-MM-DD HH:mm:ss GMT+0800"
+        deliveryTime, // String format yang benar
       });
 
       const apiUrl = window.location.origin + "/api/schedule-reminder";
@@ -93,8 +94,8 @@ const scheduleNewReminder = useCallback(
         body: JSON.stringify({
           title: title,
           content: content,
-          deliveryTime: deliveryTime, // 👈 Kirim sebagai string, BUKAN timestamp!
-          // Tidak perlu playerIds, API akan kirim ke semua subscribers
+          deliveryTime: deliveryTime, // ✅ Kirim sebagai string
+          // JANGAN kirim unixTimestamp atau playerId di sini!
         }),
       });
 
@@ -104,16 +105,25 @@ const scheduleNewReminder = useCallback(
         console.log("✅ Notifikasi berhasil dijadwalkan!", data);
         console.log("🆔 Notification ID:", data.notificationId);
         console.log("👥 Recipients:", data.recipients);
-        alert(`✅ Reminder set for: ${title}\n🕐 Time: ${deliveryTime}`);
+        console.log("📅 Scheduled for:", data.scheduledFor);
+        
+        // Alert sukses dengan info lengkap
+        alert(
+          `✅ Reminder successfully scheduled!\n\n` +
+          `📌 Activity: ${title}\n` +
+          `🕐 Time: ${deliveryTime}\n` +
+          `👥 Recipients: ${data.recipients || 'All subscribers'}`
+        );
       } else {
         console.error("❌ Gagal menjadwalkan notifikasi:", data);
         alert(
-          `❌ Gagal menjadwalkan reminder: ${data.error || "Unknown error"}`,
+          `❌ Failed to schedule reminder\n\n` +
+          `Error: ${data.error || "Unknown error"}`
         );
       }
     } catch (error) {
       console.error("❌ Error saat fetch API:", error);
-      alert(`❌ Error: ${error.message}`);
+      alert(`❌ Network Error: ${error.message}`);
     }
   },
   [],

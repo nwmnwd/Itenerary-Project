@@ -14,26 +14,49 @@ export default async function handler(req, res) {
     });
   }
 
+  // Validasi tipe data deliveryTime harus string
+  if (typeof deliveryTime !== 'string') {
+    return res.status(400).json({
+      success: false,
+      error: 'deliveryTime must be a string in format: YYYY-MM-DD HH:mm:ss GMT+0800',
+      receivedType: typeof deliveryTime
+    });
+  }
+
   try {
-    // Parse waktu dengan benar
-    const deliveryDate = new Date(deliveryTime.replace(' GMT+0800', '+08:00'));
+    // Parse waktu dengan timezone yang benar
+    let deliveryDate;
+    
+    if (deliveryTime.includes('GMT+0800')) {
+      // Format: "2025-11-25 23:10:00 GMT+0800"
+      deliveryDate = new Date(deliveryTime.replace(' GMT+0800', '+08:00'));
+    } else if (deliveryTime.includes('+08:00')) {
+      // Format: "2025-11-25T23:10:00+08:00"
+      deliveryDate = new Date(deliveryTime);
+    } else {
+      // Assume UTC if no timezone specified
+      deliveryDate = new Date(deliveryTime);
+    }
     
     // Validasi format tanggal
     if (isNaN(deliveryDate.getTime())) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid date format. Use: YYYY-MM-DD HH:mm:ss GMT+0800'
+        error: 'Invalid date format. Use: YYYY-MM-DD HH:mm:ss GMT+0800 or ISO format'
       });
     }
 
-    // Validasi waktu harus di masa depan
+    // Validasi waktu harus di masa depan (dengan 30 detik buffer)
     const now = new Date();
-    if (deliveryDate <= now) {
+    const bufferTime = new Date(now.getTime() + 30000); // 30 seconds buffer
+    
+    if (deliveryDate <= bufferTime) {
       return res.status(400).json({
         success: false,
-        error: 'Delivery time must be in the future',
+        error: 'Delivery time must be at least 30 seconds in the future',
         deliveryDate: deliveryDate.toISOString(),
-        currentTime: now.toISOString()
+        currentTime: now.toISOString(),
+        minimumTime: bufferTime.toISOString()
       });
     }
 
