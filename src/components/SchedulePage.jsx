@@ -72,60 +72,52 @@ export default function SchedulePage() {
     }
   });
 
-  const scheduleNewReminder = useCallback(
-    async (title, content, deliveryTime) => {
-      try {
-        // Konversi deliveryTime string ke Unix timestamp
-        // Input format: "2024-11-26 10:00:00 GMT+0800"
-        const deliveryDate = new Date(
-          deliveryTime.replace(" GMT+0800", "+08:00"),
+  // Ganti fungsi scheduleNewReminder dengan yang ini:
+
+const scheduleNewReminder = useCallback(
+  async (title, content, deliveryTime) => {
+    try {
+      console.log("📤 Sending notification:", {
+        title,
+        content,
+        deliveryTime, // Ini sudah dalam format "YYYY-MM-DD HH:mm:ss GMT+0800"
+      });
+
+      const apiUrl = window.location.origin + "/api/schedule-reminder";
+
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: title,
+          content: content,
+          deliveryTime: deliveryTime, // 👈 Kirim sebagai string, BUKAN timestamp!
+          // Tidak perlu playerIds, API akan kirim ke semua subscribers
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        console.log("✅ Notifikasi berhasil dijadwalkan!", data);
+        console.log("🆔 Notification ID:", data.notificationId);
+        console.log("👥 Recipients:", data.recipients);
+        alert(`✅ Reminder set for: ${title}\n🕐 Time: ${deliveryTime}`);
+      } else {
+        console.error("❌ Gagal menjadwalkan notifikasi:", data);
+        alert(
+          `❌ Gagal menjadwalkan reminder: ${data.error || "Unknown error"}`,
         );
-        const unixTimestamp = Math.floor(deliveryDate.getTime() / 1000);
-
-        // Get OneSignal Player ID (subscription ID)
-        const playerId = window.OneSignal?.User?.PushSubscription?.id;
-
-        console.log("📤 Sending notification:", {
-          title,
-          content,
-          deliveryTime,
-          unixTimestamp,
-          playerId,
-        });
-
-        const apiUrl = window.location.origin + "/api/schedule-reminder";
-
-        const response = await fetch(apiUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            title: title,
-            content: content,
-            deliveryTime: unixTimestamp, // 👈 Kirim sebagai Unix timestamp
-            playerIds: playerId ? [playerId] : undefined, // 👈 Kirim sebagai array
-          }),
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.success) {
-          console.log("✅ Notifikasi berhasil dijadwalkan!", data);
-          alert(`✅ Reminder set for: ${title}`);
-        } else {
-          console.error("❌ Gagal menjadwalkan notifikasi:", data);
-          alert(
-            `❌ Gagal menjadwalkan reminder: ${data.error || data.details?.errors?.[0] || "Unknown error"}`,
-          );
-        }
-      } catch (error) {
-        console.error("❌ Error saat fetch API:", error);
-        alert(`❌ Error: ${error.message}`);
       }
-    },
-    [],
-  );
+    } catch (error) {
+      console.error("❌ Error saat fetch API:", error);
+      alert(`❌ Error: ${error.message}`);
+    }
+  },
+  [],
+);
 
   useEffect(() => {
     const selectedDateStr = format(selectedDay, "yyyy-MM-dd");
