@@ -14,6 +14,11 @@ function App() {
         await OneSignal.init({
           appId: "48d40efc-bfd6-44f5-ada5-30f2d1a17718",
           allowLocalhostAsSecureOrigin: true,
+          notifyButton: {
+            enable: false, // Disable default notify button
+          },
+          serviceWorkerParam: { scope: '/' },
+          serviceWorkerPath: '/OneSignalSDKWorker.js',
         });
 
         console.log("OneSignal initialized successfully");
@@ -63,6 +68,17 @@ function App() {
         OneSignal.User.PushSubscription.addEventListener("change", (event) => {
           console.log("Subscription changed:", event);
           console.log("New subscription ID:", event.current.id);
+        });
+
+        // Listen for notifications received
+        OneSignal.Notifications.addEventListener("click", (event) => {
+          console.log("Notification clicked:", event);
+        });
+
+        OneSignal.Notifications.addEventListener("foregroundWillDisplay", (event) => {
+          console.log("Notification received in foreground:", event);
+          event.preventDefault(); // Prevent default handling
+          event.notification.display(); // Manually display
         });
 
         // Optional: Send a test notification tag
