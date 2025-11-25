@@ -13,12 +13,22 @@ function App() {
         await OneSignal.init({
           appId: "48d40efc-bfd6-44f5-ada5-30f2d1a17718",
           allowLocalhostAsSecureOrigin: true,
+
           promptOptions: {
             slidedown: {
               enabled: true,
               autoPrompt: true,
               timeDelay: 5,
               pageViews: 1,
+
+              text: {
+                actionMessage:
+                  "Allow notifications so we can remind you about your schedule.",
+                acceptButton: "Allow",
+                cancelButton: "Maybe later",
+                permissionMessage:
+                  "Enable notifications to receive timely reminders for your activities.",
+              },
             },
           },
         });
