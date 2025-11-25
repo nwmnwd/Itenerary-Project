@@ -1,75 +1,74 @@
+// api/schedule-reminder.js (untuk Vercel serverless function)
+// atau bisa juga pakai Express.js
+
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method Not Allowed" });
+  // Hanya terima POST request
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const ONE_SIGNAL_APP_ID = "48d40efc-bfd6-44f5-ada5-30f2d1a17718";
-  const ONE_SIGNAL_REST_KEY = process.env.ONE_SIGNAL_REST_KEY;
+  const { title, content, deliveryTime, userId } = req.body; // Tambah userId
 
-  if (!ONE_SIGNAL_REST_KEY) {
-    return res
-      .status(500)
-      .json({ error: "Missing ONE_SIGNAL_REST_KEY in server environment." });
+  // Validasi input
+  if (!title || !content || !deliveryTime) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'Missing required fields' 
+    });
   }
 
   try {
-    const { title, content, deliveryTime, playerIds } = req.body;
+    // Konversi deliveryTime ke format yang OneSignal terima
+    // Format input: "2024-11-26 10:00:00 GMT+0800"
+    // Format OneSignal: Unix timestamp
+    const deliveryDate = new Date(deliveryTime.replace(' GMT+0800', '+08:00'));
+    const sendAfter = Math.floor(deliveryDate.getTime() / 1000);
 
-    // Validasi: hanya title dan content yang wajib
-    if (!title || !content) {
-      return res.status(400).json({ 
-        error: "Missing required fields: title and content" 
-      });
-    }
-
-    // Buat payload
-    const payload = {
-      app_id: ONE_SIGNAL_APP_ID,
-      contents: { en: content },
-      headings: { en: title },
-    };
-
-    // Tambahkan send_after hanya jika deliveryTime ada
-    if (deliveryTime) {
-      payload.send_after = deliveryTime;
-    }
-
-    // Jika ada playerIds, kirim ke specific users. Jika tidak, ke semua subscribers
-    if (playerIds && playerIds.length > 0) {
-      payload.include_player_ids = playerIds;
-    } else {
-      payload.included_segments = ["Subscribed Users"];
-    }
-
-    const response = await fetch("https://onesignal.com/api/v1/notifications", {
-      method: "POST",
+    // Kirim notification ke OneSignal
+    const response = await fetch('https://onesignal.com/api/v1/notifications', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
-        Authorization: `Basic ${ONE_SIGNAL_REST_KEY}`,
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${process.env.ONESIGNAL_REST_API_KEY}`, // Simpan di .env
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        app_id: '48d40efc-bfd6-44f5-ada5-30f2d1a17718',
+        // Pilih salah satu:
+        // Option 1: Kirim ke semua user
+        included_segments: ['Subscribed Users'],
+        // Option 2: Kirim ke user tertentu (uncomment jika pakai userId)
+        // include_subscription_ids: [userId],
+        headings: { en: title },
+        contents: { en: content },
+        send_after: sendAfter, // Schedule notification
+        // Optional: Tambahkan data custom
+        data: {
+          type: 'activity_reminder',
+          scheduled_time: deliveryTime
+        }
+      }),
     });
 
     const data = await response.json();
 
-    if (!response.ok) {
-      return res.status(response.status).json({
-        error: "OneSignal API error",
-        details: data
+    if (response.ok) {
+      return res.status(200).json({
+        success: true,
+        notificationId: data.id,
+        message: 'Notification scheduled successfully',
+      });
+    } else {
+      console.error('OneSignal API Error:', data);
+      return res.status(400).json({
+        success: false,
+        error: data.errors?.[0] || 'Failed to schedule notification',
       });
     }
-
-    return res.status(200).json({
-      success: true,
-      message: deliveryTime ? "Notification scheduled successfully" : "Notification sent successfully",
-      data: data
-    });
-
   } catch (error) {
-    console.error("Error scheduling notification:", error);
+    console.error('Error scheduling notification:', error);
     return res.status(500).json({
-      error: "Internal server error",
-      message: error.message
+      success: false,
+      error: error.message,
     });
   }
 }
