@@ -14,11 +14,9 @@ function App() {
         await OneSignal.init({
           appId: "48d40efc-bfd6-44f5-ada5-30f2d1a17718",
           allowLocalhostAsSecureOrigin: true,
-          notifyButton: {
-            enable: false, // Disable default notify button
-          },
           serviceWorkerParam: { scope: '/' },
-          serviceWorkerPath: '/OneSignalSDKWorker.js',
+          serviceWorkerPath: 'OneSignalSDKWorker.js', // ← Hapus leading slash
+          path: '/', // ← Tambahkan ini
         });
 
         console.log("OneSignal initialized successfully");
