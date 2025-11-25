@@ -74,8 +74,6 @@ export default function SchedulePage() {
 
   const scheduleNewReminder = useCallback(
     async (title, content, deliveryTime) => {
-      console.log("DEBUG-2: Mulai Fetch API /api/schedule-reminder");
-      console.log("DEBUG-2: Payload Data:", { title, deliveryTime });
 
       try {
         // Gunakan URL absolute untuk production
@@ -89,6 +87,7 @@ export default function SchedulePage() {
           body: JSON.stringify({
             title: title,
             content: content,
+            deliveryTime: deliveryTime,
           }),
         });
 
@@ -140,7 +139,6 @@ export default function SchedulePage() {
     async (activityData, dateStr) => {
       if (!activityData.activity) return;
 
-
       try {
         const title = activityData.activity || "Aktivitas";
         const deliveryTimeISO = calculateReminderTime(
@@ -155,7 +153,6 @@ export default function SchedulePage() {
         const now = new Date();
 
         if (reminderTime <= now) {
-          console.warn("⚠️ Waktu reminder sudah lewat, tidak akan dijadwalkan");
           alert(
             "📅 Your scheduled time is too soon. The reminder cannot be set, but the activity is saved.",
           );
@@ -178,7 +175,6 @@ export default function SchedulePage() {
   const scheduleAndSavePendingActivity = useCallback(async () => {
     if (!pendingActivity || !pendingDateStr) return;
 
-
     const newActivity = {
       id: crypto.randomUUID(),
       ...pendingActivity,
@@ -193,7 +189,6 @@ export default function SchedulePage() {
         pendingActivity.time,
       );
 
-
       // Validasi waktu
       const reminderTime = new Date(
         deliveryTimeISO.replace(" GMT+0800", "+08:00"),
@@ -201,13 +196,12 @@ export default function SchedulePage() {
       const now = new Date();
 
       if (reminderTime <= now) {
-        console.warn("⚠️ Waktu reminder sudah lewat");
         alert(
           "⚠️ Waktu aktivitas sudah lewat. Reminder tidak dapat dijadwalkan, tapi jadwal tetap disimpan.",
         );
       } else {
         await scheduleNewReminder(
-          `Pengingat: ${title}`,
+          title,
           `Aktivitasmu akan dimulai pukul ${pendingActivity.time}!`,
           deliveryTimeISO,
         );
