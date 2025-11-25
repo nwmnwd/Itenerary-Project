@@ -96,7 +96,7 @@ export default function SchedulePage() {
 
         if (response.ok && data.success) {
           console.log("✅ Notifikasi berhasil dijadwalkan!", data);
-          alert(`Reminder set for: ${title}`);
+          alert(`✅ Reminder set for: ${title}`);
         } else {
           console.error("❌ Gagal menjadwalkan notifikasi:", data);
           alert(
