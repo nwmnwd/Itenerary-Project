@@ -1,14 +1,8 @@
 {
+  "version": 2,
   "functions": {
-    "api/schedule-reminder.js": {
-      "runtime": "nodejs18.x"
+    "api/onesignal.js": {
+      "runtime": "nodejs20.x"
     }
-  },
-  "routes": [
-    {
-      "src": "/api/schedule-reminder",
-      "dest": "/api/schedule-reminder.js",
-      "methods": ["POST"]
-    }
-  ]
+  }
 }
