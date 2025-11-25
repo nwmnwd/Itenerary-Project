@@ -99,9 +99,8 @@ const PaymentForm = ({ onPaymentSuccess, onCancel }) => {
   );
 };
 
-
 export default function SubscriptionModal({ onPaymentSuccess, onClose }) {
-  const [stage, setStage] = useState("plan"); 
+  const [stage, setStage] = useState("plan");
 
   const handleChoosePlan = () => {
     setStage("payment");
@@ -129,9 +128,7 @@ export default function SubscriptionModal({ onPaymentSuccess, onClose }) {
               </p>
             </div>
 
-
             <div className="mx-auto mt-16 grid max-w-lg grid-cols-1 items-center gap-y-6 sm:mt-20">
-
               <div className="rounded-3xl bg-white/60 p-8 ring-1 ring-gray-900/10 sm:p-10 dark:bg-white/2.5 dark:ring-white/10">
                 <h3
                   id="tier-hobby"
