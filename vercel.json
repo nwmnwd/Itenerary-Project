@@ -1,5 +1,4 @@
 {
-  "version": 2,
   "functions": {
     "api/schedule-reminder.js": {
       "runtime": "nodejs20.x"
