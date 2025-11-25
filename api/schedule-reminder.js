@@ -13,13 +13,27 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { title, content, deliveryTime } = req.body;
+    const { title, content, deliveryTime, playerIds } = req.body;
 
-    // Validasi input
     if (!title || !content || !deliveryTime) {
       return res.status(400).json({ 
         error: "Missing required fields: title, content, or deliveryTime" 
       });
+    }
+
+    // Buat payload
+    const payload = {
+      app_id: ONE_SIGNAL_APP_ID,
+      contents: { en: content },
+      headings: { en: title },
+      send_after: deliveryTime,
+    };
+
+    // Jika ada playerIds, kirim ke specific users. Jika tidak, ke semua subscribers
+    if (playerIds && playerIds.length > 0) {
+      payload.include_player_ids = playerIds;
+    } else {
+      payload.included_segments = ["Subscribed Users"];
     }
 
     const response = await fetch("https://onesignal.com/api/v1/notifications", {
@@ -28,18 +42,11 @@ export default async function handler(req, res) {
         "Content-Type": "application/json",
         Authorization: `Basic ${ONE_SIGNAL_REST_KEY}`,
       },
-      body: JSON.stringify({
-        app_id: ONE_SIGNAL_APP_ID,
-        included_segments: ["Subscribed Users"],
-        contents: { en: content },
-        headings: { en: title },
-        send_after: deliveryTime,
-      }),
+      body: JSON.stringify(payload),
     });
 
     const data = await response.json();
 
-    // Cek apakah OneSignal berhasil
     if (!response.ok) {
       return res.status(response.status).json({
         error: "OneSignal API error",
@@ -47,7 +54,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // Kirim response sukses
     return res.status(200).json({
       success: true,
       message: "Notification scheduled successfully",
