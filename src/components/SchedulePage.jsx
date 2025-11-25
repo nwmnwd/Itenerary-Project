@@ -67,7 +67,7 @@ export default function SchedulePage() {
   const scheduleNewReminder = useCallback(
     async (title, content, deliveryTime) => {
       try {
-        const response = await fetch("/api/schedule-reminder.js", {
+        const response = await fetch("/api/schedule-reminder", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
