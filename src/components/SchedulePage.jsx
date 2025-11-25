@@ -74,9 +74,25 @@ export default function SchedulePage() {
 
   const scheduleNewReminder = useCallback(
     async (title, content, deliveryTime) => {
-
       try {
-        // Gunakan URL absolute untuk production
+        // Konversi deliveryTime string ke Unix timestamp
+        // Input format: "2024-11-26 10:00:00 GMT+0800"
+        const deliveryDate = new Date(
+          deliveryTime.replace(" GMT+0800", "+08:00"),
+        );
+        const unixTimestamp = Math.floor(deliveryDate.getTime() / 1000);
+
+        // Get OneSignal Player ID (subscription ID)
+        const playerId = window.OneSignal?.User?.PushSubscription?.id;
+
+        console.log("📤 Sending notification:", {
+          title,
+          content,
+          deliveryTime,
+          unixTimestamp,
+          playerId,
+        });
+
         const apiUrl = window.location.origin + "/api/schedule-reminder";
 
         const response = await fetch(apiUrl, {
@@ -87,7 +103,8 @@ export default function SchedulePage() {
           body: JSON.stringify({
             title: title,
             content: content,
-            deliveryTime: deliveryTime,
+            deliveryTime: unixTimestamp, // 👈 Kirim sebagai Unix timestamp
+            playerIds: playerId ? [playerId] : undefined, // 👈 Kirim sebagai array
           }),
         });
 
@@ -99,7 +116,7 @@ export default function SchedulePage() {
         } else {
           console.error("❌ Gagal menjadwalkan notifikasi:", data);
           alert(
-            `❌ Gagal menjadwalkan reminder: ${data.error || "Unknown error"}`,
+            `❌ Gagal menjadwalkan reminder: ${data.error || data.details?.errors?.[0] || "Unknown error"}`,
           );
         }
       } catch (error) {
