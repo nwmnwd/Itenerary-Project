@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Basic ${ONE_SIGNAL_REST_KEY}`,
+      Authorization: ONE_SIGNAL_REST_KEY,
     },
     body: JSON.stringify({
       app_id: ONE_SIGNAL_APP_ID,
