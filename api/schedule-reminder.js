@@ -15,6 +15,7 @@ export default async function handler(req, res) {
   try {
     const { title, content, deliveryTime, playerIds } = req.body;
 
+    // Validasi: hanya title dan content yang wajib
     if (!title || !content) {
       return res.status(400).json({ 
         error: "Missing required fields: title and content" 
