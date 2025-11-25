@@ -88,7 +88,10 @@ export default function SchedulePage() {
         if (response.ok) {
           console.log("Notifikasi berhasil dijadwalkan!", data.notificationId);
         } else {
-          console.error("Gagal menjadwalkan notifikasi (Serverless Error):", data);
+          console.error(
+            "Gagal menjadwalkan notifikasi (Serverless Error):",
+            data,
+          );
         }
       } catch (error) {
         console.error("Error saat fetch API:", error);
@@ -96,8 +99,6 @@ export default function SchedulePage() {
     },
     [],
   );
-
-
 
   useEffect(() => {
     const selectedDateStr = format(selectedDay, "yyyy-MM-dd");
@@ -124,59 +125,86 @@ export default function SchedulePage() {
     }
   }, [itineraryData]);
 
-  const scheduleAndSavePendingActivity = useCallback(async () => {
-      if (!pendingActivity || !pendingDateStr) return;
-      
-      // DEBUG LOG: Konfirmasi Masuk ke Blok Penjadwalan
-      console.log("DEBUG-1: Masuk ke Blok Penjadwalan Aktivitas Premium (via Modal)"); 
+  const scheduleActivity = useCallback(
+    async (activityData, dateStr) => {
+      if (!activityData.activity) return; // Pastikan data aktivitas ada
 
-      const newActivity = {
-        id: crypto.randomUUID(),
-        ...pendingActivity,
-        isNew: false,
-      };
+      // DEBUG LOG: Konfirmasi penjadwalan langsung
+      console.log("DEBUG-0: Menerima permintaan penjadwalan langsung");
 
-      // 1. JADWALKAN PENGINGAT 
       try {
-        const title = pendingActivity.activity || "Aktivitas";
+        const title = activityData.activity || "Aktivitas";
         const deliveryTimeISO = calculateReminderTime(
-          pendingDateStr,
-          pendingActivity.time,
+          dateStr,
+          activityData.time,
         );
-        
-        // DEBUG LOG: Konfirmasi Waktu ISO
-        console.log("DEBUG-3: Waktu Reminder (ISO):", deliveryTimeISO);
-        
+
         await scheduleNewReminder(
           `Pengingat: ${title}`,
-          `Aktivitasmu akan dimulai pukul ${pendingActivity.time}!`,
+          `Aktivitasmu akan dimulai pukul ${activityData.time}!`,
           deliveryTimeISO,
         );
       } catch (e) {
-        console.error("Gagal menghitung waktu pengingat:", e);
+        console.error("Gagal menjadwalkan notifikasi:", e);
       }
+    },
+    [scheduleNewReminder],
+  );
 
-      // 2. SIMPAN DATA JADWAL
-      setItineraryData((prev) => ({
-        ...prev,
-        [pendingDateStr]: [...(prev[pendingDateStr] || []), newActivity],
-      }));
+  const scheduleAndSavePendingActivity = useCallback(async () => {
+    if (!pendingActivity || !pendingDateStr) return;
 
-      setPendingActivity(null);
-      setPendingDateStr(null);
+    // DEBUG LOG: Konfirmasi Masuk ke Blok Penjadwalan
+    console.log(
+      "DEBUG-1: Masuk ke Blok Penjadwalan Aktivitas Premium (via Modal)",
+    );
+
+    const newActivity = {
+      id: crypto.randomUUID(),
+      ...pendingActivity,
+      isNew: false,
+    };
+
+    // 1. JADWALKAN PENGINGAT
+    try {
+      const title = pendingActivity.activity || "Aktivitas";
+      const deliveryTimeISO = calculateReminderTime(
+        pendingDateStr,
+        pendingActivity.time,
+      );
+
+      // DEBUG LOG: Konfirmasi Waktu ISO
+      console.log("DEBUG-3: Waktu Reminder (ISO):", deliveryTimeISO);
+
+      await scheduleNewReminder(
+        `Pengingat: ${title}`,
+        `Aktivitasmu akan dimulai pukul ${pendingActivity.time}!`,
+        deliveryTimeISO,
+      );
+    } catch (e) {
+      console.error("Gagal menghitung waktu pengingat:", e);
+    }
+
+    // 2. SIMPAN DATA JADWAL
+    setItineraryData((prev) => ({
+      ...prev,
+      [pendingDateStr]: [...(prev[pendingDateStr] || []), newActivity],
+    }));
+
+    setPendingActivity(null);
+    setPendingDateStr(null);
   }, [setItineraryData, pendingActivity, pendingDateStr, scheduleNewReminder]);
 
   const handlePaymentSuccess = useCallback(async () => {
     // DEBUG LOG 1: Konfirmasi handlePaymentSuccess dipanggil
     console.log("DEBUG-1: handlePaymentSuccess dipanggil");
-    
+
     setIsPremium(true);
-    localStorage.setItem(PREMIUM_STORAGE_KEY, "true"); 
+    localStorage.setItem(PREMIUM_STORAGE_KEY, "true");
     setShowSubscriptionModal(false);
 
     // Panggil fungsi yang menangani penjadwalan & penyimpanan pending
     await scheduleAndSavePendingActivity();
-    
   }, [scheduleAndSavePendingActivity]);
 
   const handleShowSubscriptionForSave = useCallback((activityData, dateStr) => {
