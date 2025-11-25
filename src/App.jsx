@@ -73,10 +73,12 @@ function App() {
           console.log("Notification clicked:", event);
         });
 
+        // PENTING: Handle notifikasi saat tab aktif (foreground)
         OneSignal.Notifications.addEventListener("foregroundWillDisplay", (event) => {
-          console.log("Notification received in foreground:", event);
-          event.preventDefault(); // Prevent default handling
-          event.notification.display(); // Manually display
+          console.log("📬 Notification received:", event.notification);
+          
+          // Tampilkan notifikasi meskipun tab aktif
+          // Jangan preventDefault() agar notifikasi tetap muncul
         });
 
         // Optional: Send a test notification tag
