@@ -66,7 +66,7 @@ export default function SchedulePage() {
 
   const scheduleNewReminder = useCallback(
     async (title, content, deliveryTime) => {
-      // **DEBUG LOG 2: Sebelum FETCH**
+      // DEBUG LOG: Dibiarkan untuk melihat payload
       console.log("DEBUG-2: Mulai Fetch API /api/schedule-reminder");
       console.log("DEBUG-2: Payload Data:", { title, deliveryTime });
 
@@ -79,7 +79,7 @@ export default function SchedulePage() {
           body: JSON.stringify({
             title: title,
             content: content,
-            deliveryTime: deliveryTime, // Format ISO 8601
+            deliveryTime: deliveryTime,
           }),
         });
 
@@ -88,7 +88,6 @@ export default function SchedulePage() {
         if (response.ok) {
           console.log("Notifikasi berhasil dijadwalkan!", data.notificationId);
         } else {
-          // Tangani error dari Serverless Function
           console.error("Gagal menjadwalkan notifikasi (Serverless Error):", data);
         }
       } catch (error) {
@@ -97,6 +96,8 @@ export default function SchedulePage() {
     },
     [],
   );
+
+
 
   useEffect(() => {
     const selectedDateStr = format(selectedDay, "yyyy-MM-dd");
@@ -123,17 +124,11 @@ export default function SchedulePage() {
     }
   }, [itineraryData]);
 
-  const handlePaymentSuccess = useCallback(async () => {
-    setIsPremium(true);
-    localStorage.setItem(PREMIUM_STORAGE_KEY, "true"); //
-
-    setShowSubscriptionModal(false);
-    
-    // **DEBUG LOG 1: Konfirmasi Masuk ke Blok Penjadwalan**
-    console.log("DEBUG-1: handlePaymentSuccess dipanggil"); 
-
-    if (pendingActivity && pendingDateStr) {
-      console.log("DEBUG-1: Masuk ke Blok Penjadwalan Aktivitas Premium"); 
+  const scheduleAndSavePendingActivity = useCallback(async () => {
+      if (!pendingActivity || !pendingDateStr) return;
+      
+      // DEBUG LOG: Konfirmasi Masuk ke Blok Penjadwalan
+      console.log("DEBUG-1: Masuk ke Blok Penjadwalan Aktivitas Premium (via Modal)"); 
 
       const newActivity = {
         id: crypto.randomUUID(),
@@ -141,18 +136,17 @@ export default function SchedulePage() {
         isNew: false,
       };
 
-      // 1. JADWALKAN PENGINGAT (HANYA JIKA ADA PENDING ACTIVITY)
+      // 1. JADWALKAN PENGINGAT 
       try {
-        const title = pendingActivity.name || "Aktivitas";
+        const title = pendingActivity.activity || "Aktivitas";
         const deliveryTimeISO = calculateReminderTime(
           pendingDateStr,
           pendingActivity.time,
         );
         
-        // **DEBUG LOG 3: Konfirmasi Waktu ISO**
+        // DEBUG LOG: Konfirmasi Waktu ISO
         console.log("DEBUG-3: Waktu Reminder (ISO):", deliveryTimeISO);
         
-        // FIX: Tambahkan AWAIT
         await scheduleNewReminder(
           `Pengingat: ${title}`,
           `Aktivitasmu akan dimulai pukul ${pendingActivity.time}!`,
@@ -170,10 +164,20 @@ export default function SchedulePage() {
 
       setPendingActivity(null);
       setPendingDateStr(null);
-    } else {
-      console.log("DEBUG-1: Pending Activity atau Tanggal Kosong. Hanya update premium.");
-    }
   }, [setItineraryData, pendingActivity, pendingDateStr, scheduleNewReminder]);
+
+  const handlePaymentSuccess = useCallback(async () => {
+    // DEBUG LOG 1: Konfirmasi handlePaymentSuccess dipanggil
+    console.log("DEBUG-1: handlePaymentSuccess dipanggil");
+    
+    setIsPremium(true);
+    localStorage.setItem(PREMIUM_STORAGE_KEY, "true"); 
+    setShowSubscriptionModal(false);
+
+    // Panggil fungsi yang menangani penjadwalan & penyimpanan pending
+    await scheduleAndSavePendingActivity();
+    
+  }, [scheduleAndSavePendingActivity]);
 
   const handleShowSubscriptionForSave = useCallback((activityData, dateStr) => {
     setPendingActivity(activityData);
@@ -309,6 +313,7 @@ export default function SchedulePage() {
           searchQuery={searchQuery}
           isPremium={isPremium}
           onShowSubscriptionForSave={handleShowSubscriptionForSave}
+          onScheduleActivity={scheduleActivity}
         />
       </main>
       {showSubscriptionModal && (

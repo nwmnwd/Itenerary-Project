@@ -14,6 +14,7 @@ export default function Timeline({
   searchQuery = "",
   isPremium,
   onShowSubscriptionForSave,
+  onScheduleActivity,
 }) {
   const todayStr = format(startOfDay(new Date()), "yyyy-MM-dd");
   const selectedDateStr = format(selectedDay, "yyyy-MM-dd");
@@ -132,7 +133,10 @@ export default function Timeline({
 
         requestAnimationFrame(() => {
           onActiveChange?.(filteredData[0]);
-          refs.current[0]?.scrollIntoView({ behavior: "auto", block: "center" });
+          refs.current[0]?.scrollIntoView({
+            behavior: "auto",
+            block: "center",
+          });
         });
       } else {
         requestAnimationFrame(() => {
@@ -215,14 +219,21 @@ export default function Timeline({
       const dateStr = selectedDateStr;
 
       if (isNew && !isPremium && onShowSubscriptionForSave) {
+        // Logika Modal Pembayaran (tetap sama)
         deleteItem(dateStr, itemId);
-
         onShowSubscriptionForSave(activityData, dateStr);
         setEditingToFalse();
         return;
       }
 
-      saveItem(dateStr, itemId, activityData);
+      // 2. Jika Sudah Premium atau Item Lama:
+      saveItem(dateStr, itemId, activityData); // Simpan data ke state
+
+      // 🚨 FUNGSI BARU: Panggil Penjadwalan Notifikasi jika item memiliki aktivitas
+      if (onScheduleActivity && activityData.activity) {
+        onScheduleActivity({ ...activityData, id: itemId }, dateStr);
+      }
+
       setEditingToFalse();
     },
     [
@@ -231,6 +242,7 @@ export default function Timeline({
       selectedDateStr,
       saveItem,
       deleteItem,
+      onScheduleActivity, // <-- Tambahkan ini ke dependensi
     ],
   );
 
