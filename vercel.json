@@ -1,8 +1,13 @@
 {
+  "functions": {
+    "api/schedule-reminder.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api"
+      "source": "/api/schedule-reminder",
+      "destination": "/api/schedule-reminder.js"
     }
   ]
 }
