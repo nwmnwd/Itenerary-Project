@@ -66,6 +66,10 @@ export default function SchedulePage() {
 
   const scheduleNewReminder = useCallback(
     async (title, content, deliveryTime) => {
+      // **DEBUG LOG 2: Sebelum FETCH**
+      console.log("DEBUG-2: Mulai Fetch API /api/schedule-reminder");
+      console.log("DEBUG-2: Payload Data:", { title, deliveryTime });
+
       try {
         const response = await fetch("/api/schedule-reminder", {
           method: "POST",
@@ -85,7 +89,7 @@ export default function SchedulePage() {
           console.log("Notifikasi berhasil dijadwalkan!", data.notificationId);
         } else {
           // Tangani error dari Serverless Function
-          console.error("Gagal menjadwalkan notifikasi:", data);
+          console.error("Gagal menjadwalkan notifikasi (Serverless Error):", data);
         }
       } catch (error) {
         console.error("Error saat fetch API:", error);
@@ -119,13 +123,18 @@ export default function SchedulePage() {
     }
   }, [itineraryData]);
 
-  const handlePaymentSuccess = useCallback(() => {
+  const handlePaymentSuccess = useCallback(async () => {
     setIsPremium(true);
     localStorage.setItem(PREMIUM_STORAGE_KEY, "true"); //
 
     setShowSubscriptionModal(false);
+    
+    // **DEBUG LOG 1: Konfirmasi Masuk ke Blok Penjadwalan**
+    console.log("DEBUG-1: handlePaymentSuccess dipanggil"); 
 
     if (pendingActivity && pendingDateStr) {
+      console.log("DEBUG-1: Masuk ke Blok Penjadwalan Aktivitas Premium"); 
+
       const newActivity = {
         id: crypto.randomUUID(),
         ...pendingActivity,
@@ -139,8 +148,12 @@ export default function SchedulePage() {
           pendingDateStr,
           pendingActivity.time,
         );
-
-        scheduleNewReminder(
+        
+        // **DEBUG LOG 3: Konfirmasi Waktu ISO**
+        console.log("DEBUG-3: Waktu Reminder (ISO):", deliveryTimeISO);
+        
+        // FIX: Tambahkan AWAIT
+        await scheduleNewReminder(
           `Pengingat: ${title}`,
           `Aktivitasmu akan dimulai pukul ${pendingActivity.time}!`,
           deliveryTimeISO,
@@ -157,6 +170,8 @@ export default function SchedulePage() {
 
       setPendingActivity(null);
       setPendingDateStr(null);
+    } else {
+      console.log("DEBUG-1: Pending Activity atau Tanggal Kosong. Hanya update premium.");
     }
   }, [setItineraryData, pendingActivity, pendingDateStr, scheduleNewReminder]);
 
