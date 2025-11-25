@@ -67,7 +67,7 @@ export default function SchedulePage() {
   const scheduleNewReminder = useCallback(
     async (title, content, deliveryTime) => {
       try {
-        const response = await fetch("/api/schedule-reminder", {
+        const response = await fetch("/api/schedule-reminder.js", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -166,7 +166,6 @@ export default function SchedulePage() {
     setShowSubscriptionModal(true);
   }, []);
 
-  
   const selectedDayRef = useRef(selectedDay);
   useEffect(() => {
     selectedDayRef.current = selectedDay;
