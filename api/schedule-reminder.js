@@ -15,9 +15,9 @@ export default async function handler(req, res) {
   try {
     const { title, content, deliveryTime, playerIds } = req.body;
 
-    if (!title || !content || !deliveryTime) {
+    if (!title || !content) {
       return res.status(400).json({ 
-        error: "Missing required fields: title, content, or deliveryTime" 
+        error: "Missing required fields: title and content" 
       });
     }
 
@@ -26,8 +26,12 @@ export default async function handler(req, res) {
       app_id: ONE_SIGNAL_APP_ID,
       contents: { en: content },
       headings: { en: title },
-      send_after: deliveryTime,
     };
+
+    // Tambahkan send_after hanya jika deliveryTime ada
+    if (deliveryTime) {
+      payload.send_after = deliveryTime;
+    }
 
     // Jika ada playerIds, kirim ke specific users. Jika tidak, ke semua subscribers
     if (playerIds && playerIds.length > 0) {
@@ -56,7 +60,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       success: true,
-      message: "Notification scheduled successfully",
+      message: deliveryTime ? "Notification scheduled successfully" : "Notification sent successfully",
       data: data
     });
 
