@@ -96,7 +96,7 @@ export default function SchedulePage() {
 
         if (response.ok && data.success) {
           console.log("✅ Notifikasi berhasil dijadwalkan!", data);
-          alert(`✅ Reminder berhasil dijadwalkan untuk: ${title}`);
+          alert(`Reminder set for: ${title}`);
         } else {
           console.error("❌ Gagal menjadwalkan notifikasi:", data);
           alert(
@@ -140,7 +140,6 @@ export default function SchedulePage() {
     async (activityData, dateStr) => {
       if (!activityData.activity) return;
 
-      console.log("DEBUG-0: Menerima permintaan penjadwalan langsung");
 
       try {
         const title = activityData.activity || "Aktivitas";
@@ -158,13 +157,13 @@ export default function SchedulePage() {
         if (reminderTime <= now) {
           console.warn("⚠️ Waktu reminder sudah lewat, tidak akan dijadwalkan");
           alert(
-            "⚠️ Waktu aktivitas sudah lewat. Reminder tidak dapat dijadwalkan.",
+            "📅 Your scheduled time is too soon. The reminder cannot be set, but the activity is saved.",
           );
           return;
         }
 
         await scheduleNewReminder(
-          `Pengingat: ${title}`,
+          `${title}`,
           `Aktivitasmu akan dimulai pukul ${activityData.time}!`,
           deliveryTimeISO,
         );
@@ -179,9 +178,6 @@ export default function SchedulePage() {
   const scheduleAndSavePendingActivity = useCallback(async () => {
     if (!pendingActivity || !pendingDateStr) return;
 
-    console.log(
-      "DEBUG-1: Masuk ke Blok Penjadwalan Aktivitas Premium (via Modal)",
-    );
 
     const newActivity = {
       id: crypto.randomUUID(),
@@ -197,7 +193,6 @@ export default function SchedulePage() {
         pendingActivity.time,
       );
 
-      console.log("DEBUG-3: Waktu Reminder (ISO):", deliveryTimeISO);
 
       // Validasi waktu
       const reminderTime = new Date(
