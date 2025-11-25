@@ -8,53 +8,35 @@ import "./App.css";
 
 function App() {
   useEffect(() => {
-  async function runOneSignal() {
-    try {
-      await OneSignal.init({
-        appId: "48d40efc-bfd6-44f5-ada5-30f2d1a17718",
-        allowLocalhostAsSecureOrigin: true,
+    async function runOneSignal() {
+      try {
+        await OneSignal.init({
+          appId: "48d40efc-bfd6-44f5-ada5-30f2d1a17718",
+          allowLocalhostAsSecureOrigin: true,
+        });
 
-        promptOptions: {
-          slidedown: {
-            enabled: true,
-            autoPrompt: true,
-            timeDelay: 5,
-            pageViews: 1,
+        // Request permission
+        const permission = await OneSignal.Notifications.requestPermission();
+        console.log("Permission:", permission);
 
-            text: {
-              actionMessage:
-                "Allow notifications so we can remind you about your schedule.",
-              acceptButton: "Allow",
-              cancelButton: "Maybe later",
-              permissionMessage:
-                "Enable notifications to receive timely reminders for your activities.",
-            },
-          },
-        },
-      });
+        // Subscribe push
+        const sub = await OneSignal.User.PushSubscription.subscribe();
+        console.log("Subscribed:", sub);
 
-      await OneSignal.Slidedown.promptPush();
+        // Listener player ID
+        OneSignal.User.PushSubscription.addEventListener("change", (event) => {
+          console.log("OneSignal Subscription Changed:", event);
+        });
 
-      // Tambahkan ini untuk dapatkan Player ID
-      OneSignal.User.PushSubscription.addEventListener("change", (event) => {
-        console.log("OneSignal Subscription Changed:", event);
-        if (event.current.id) {
-          console.log("🎯 Your Player ID:", event.current.id);
-          console.log("🎯 Token:", event.current.token);
-        }
-      });
-
-      // Cek subscription saat ini
-      const playerId = await OneSignal.User.PushSubscription.id;
-      console.log("🎯 Current Player ID:", playerId);
-
-    } catch (error) {
-      console.error("Error initializing OneSignal:", error);
+        const playerId = await OneSignal.User.PushSubscription.id;
+        console.log("🎯 Current Player ID:", playerId);
+      } catch (error) {
+        console.error("Error initializing OneSignal:", error);
+      }
     }
-  }
 
-  runOneSignal();
-}, []);
+    runOneSignal();
+  }, []);
 
   return (
     <>
