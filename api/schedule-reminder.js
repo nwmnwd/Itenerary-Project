@@ -72,24 +72,17 @@ export default async function handler(req, res) {
       deliveryTimeStr = String(deliveryTime);
     }
 
-    console.log("📥 Received data:", { title, content, deliveryTime, userId });
+    console.log("📥 Received data:", { title, content, deliveryTime: deliveryTimeStr, userId });
 
-    let deliveryDate;
-
-    // Parse waktu dengan timezone yang benar (mengganti GMT+0800 ke +08:00)
-    if (deliveryTimeStr.includes("GMT+0800")) {
-      const isoString = deliveryTimeStr.replace(" GMT+0800", "+08:00");
-      deliveryDate = new Date(isoString);
-    } else {
-      deliveryDate = new Date(deliveryTimeStr);
-    }
+    // ✅ KOREKSI KRITIS: Parsing menggunakan format ISO yang dikirim dari frontend
+    const deliveryDate = new Date(deliveryTimeStr);
 
     // Validasi format tanggal
     if (isNaN(deliveryDate.getTime())) {
       return res.status(400).json({
         success: false,
         error:
-          "Invalid date format. Use: YYYY-MM-DD HH:mm:ss GMT+0800 or ISO format",
+          "Invalid date format. Expected YYYY-MM-DDTHH:mm:ss+08:00 (ISO with offset)",
         received: deliveryTimeStr,
       });
     }
@@ -113,7 +106,7 @@ export default async function handler(req, res) {
     // --- PEMBANGUNAN PAYLOAD ONESIGNAL ---
 
     console.log("📤 Scheduling notification:", {
-      deliveryTimeOriginal: deliveryTime, // String dari frontend
+      deliveryTimeOriginal: deliveryTime, // String asli dari frontend
       deliveryTimeProcessed: deliveryTimeStr,
       deliveryDateISO: deliveryDate.toISOString(), // Waktu dalam format ISO (UTC)
       sendAfter, // UNIX timestamp (detik) yang akan digunakan OneSignal
@@ -129,7 +122,8 @@ export default async function handler(req, res) {
       headings: { en: title },
       contents: { en: content },
 
-      send_after: sendAfter,
+      // Nilai send_after harus di masa depan
+      send_after: sendAfter, 
       priority: 10,
       ttl: 86400,
 
@@ -164,7 +158,7 @@ export default async function handler(req, res) {
       return res.status(200).json({
         success: true,
         notificationId: data.id,
-        recipients: data.recipients, // Harusnya 1 jika berhasil
+        recipients: data.recipients, 
         message: "Notification scheduled successfully",
         scheduledFor: deliveryDate.toISOString(),
       });

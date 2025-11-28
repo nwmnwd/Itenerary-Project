@@ -35,7 +35,7 @@ const calculateReminderTime = (dateStr, timeStr) => {
   const minute = String(finalReminderTime.getMinutes()).padStart(2, "0");
   const second = String(finalReminderTime.getSeconds()).padStart(2, "0");
 
-  return `${year}-${month}-${day} ${hour}:${minute}:${second} GMT+0800`;
+  return `${year}-${month}-${day}T${hour}:${minute}:${second}+08:00`;
 };
 
 export default function SchedulePage() {
