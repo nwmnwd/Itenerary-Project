@@ -17,11 +17,11 @@ function Header({
   return (
     <>
       <div className="w-full bg-violet-500 px-8 pt-6 pb-6">
-        <div className="flex flex-row justify-between items-center">
-          <div className="text-sm mb-1 text-left font-light text-white">
+        <div className="flex flex-row items-center justify-between">
+          <div className="mb-1 text-left text-sm font-light text-white">
             Current Focus:
           </div>
-          <div className=" rounded-4xl bg-white/20 text-xs  px-2.5 py-1 font-semibold text-white">
+          <div className="rounded-4xl bg-white/20 px-2.5 py-1 text-xs font-semibold text-white">
             {time ? ` ${time}` : ""}
           </div>
         </div>

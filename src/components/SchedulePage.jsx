@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-
 import Calendar from "./Calendar";
 import Timeline from "./Timeline";
 import Header from "./Header";
@@ -9,30 +8,26 @@ import {
   parseISO,
   differenceInCalendarDays,
   format,
-  setMinutes, // <-- Baru: dari date-fns
-  setHours, // <-- Baru: dari date-fns
+  setMinutes,
+  setHours,
   subMinutes,
 } from "date-fns";
 import SubscriptionModal from "./SubscriptionModal";
 import { ChevronUpIcon } from "@heroicons/react/solid";
 import { CalendarDate } from "../assets/icons";
+import OneSignal from "react-onesignal";
 
-// local storage premium
 const PREMIUM_STORAGE_KEY = "user_is_premium";
 
 const calculateReminderTime = (dateStr, timeStr) => {
   const [hours, minutes] = timeStr.split(":").map(Number);
 
-  // 1. Gabungkan tanggal dan waktu menjadi objek Date
   let reminderDate = parseISO(dateStr);
   reminderDate = setHours(reminderDate, hours);
   reminderDate = setMinutes(reminderDate, minutes);
 
-  // 2. Kurangi 5 menit dari waktu tersebut
   const finalReminderTime = subMinutes(reminderDate, 5);
 
-  // 3. Format ke string dengan timezone GMT+0800
-  // Format: "2024-11-26 10:00:00 GMT+0800"
   const year = finalReminderTime.getFullYear();
   const month = String(finalReminderTime.getMonth() + 1).padStart(2, "0");
   const day = String(finalReminderTime.getDate()).padStart(2, "0");
@@ -49,8 +44,8 @@ export default function SchedulePage() {
   const [completedCount, setCompletedCount] = useState(0);
   const [todayCurrentActivity, setTodayCurrentActivity] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [playerId, setPlayerId] = useState(null); // ✅ State untuk Player ID
 
   const [isPremium, setIsPremium] = useState(() => {
     try {
@@ -60,6 +55,7 @@ export default function SchedulePage() {
       return false;
     }
   });
+  
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [pendingActivity, setPendingActivity] = useState(null);
   const [pendingDateStr, setPendingDateStr] = useState(null);
@@ -72,69 +68,89 @@ export default function SchedulePage() {
     }
   });
 
-  // Ganti fungsi scheduleNewReminder dengan yang ini:
-
-const scheduleNewReminder = useCallback(
-  async (title, content, deliveryTime) => {
-    try {
-      // deliveryTime sudah dalam format: "2025-11-25 23:10:00 GMT+0800"
-      console.log("📤 Sending notification:", {
-        title,
-        content,
-        deliveryTime, // String format yang benar
-      });
-
-      const apiUrl = window.location.origin + "/api/schedule-reminder";
-
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title: title,
-          content: content,
-          deliveryTime: deliveryTime, // ✅ Kirim sebagai string
-          // JANGAN kirim unixTimestamp atau playerId di sini!
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        console.log("✅ Notifikasi berhasil dijadwalkan!", data);
-        console.log("🆔 Notification ID:", data.notificationId);
-        console.log("👥 Recipients:", data.recipients);
-        console.log("📅 Scheduled for:", data.scheduledFor);
+  // ✅ Dapatkan Player ID dari OneSignal
+  useEffect(() => {
+    const getPlayerId = async () => {
+      try {
+        // Tunggu sampai OneSignal terinisialisasi
+        await new Promise(resolve => setTimeout(resolve, 2000));
         
-        // Alert sukses dengan info lengkap
-        alert(
-          `✅ Reminder successfully scheduled!\n\n` +
-          `📌 Activity: ${title}\n` +
-          `🕐 Time: ${deliveryTime}\n` +
-          `👥 Recipients: ${data.recipients || 'All subscribers'}`
-        );
-      } else {
-        console.error("❌ Gagal menjadwalkan notifikasi:", data);
-        alert(
-          `❌ Failed to schedule reminder\n\n` +
-          `Error: ${data.error || "Unknown error"}`
-        );
+        const subscriptionId = OneSignal.User.PushSubscription.id;
+        
+        if (subscriptionId) {
+          console.log("✅ Player ID ditemukan:", subscriptionId);
+          setPlayerId(subscriptionId);
+        } else {
+          console.warn("⚠️ Player ID tidak ditemukan. User mungkin belum subscribe.");
+        }
+      } catch (error) {
+        console.error("❌ Error mendapatkan Player ID:", error);
       }
-    } catch (error) {
-      console.error("❌ Error saat fetch API:", error);
-      alert(`❌ Network Error: ${error.message}`);
-    }
-  },
-  [],
-);
+    };
+
+    getPlayerId();
+  }, []);
+
+  // ✅ Fungsi schedule dengan Player ID
+  const scheduleNewReminder = useCallback(
+    async (title, content, deliveryTime) => {
+      try {
+        console.log("📤 Sending notification:", {
+          title,
+          content,
+          deliveryTime,
+          playerId, // Log Player ID
+        });
+
+        // ✅ Validasi Player ID
+        if (!playerId) {
+          console.warn("⚠️ Player ID tidak tersedia. Notifikasi akan dikirim ke semua subscriber.");
+        }
+
+        const apiUrl = window.location.origin + "/api/schedule-reminder";
+
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: title,
+            content: content,
+            deliveryTime: deliveryTime,
+            userId: playerId, // ✅ Kirim Player ID
+          }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          console.log("✅ Notifikasi berhasil dijadwalkan!", data);
+          alert(
+            `✅ Reminder successfully scheduled!\n\n` +
+            `📌 Activity: ${title}\n` +
+            `🕐 Time: ${deliveryTime}\n` +
+            `👥 Recipients: ${data.recipients || 'All subscribers'}`
+          );
+        } else {
+          console.error("❌ Gagal menjadwalkan notifikasi:", data);
+          alert(
+            `❌ Failed to schedule reminder\n\n` +
+            `Error: ${data.error || "Unknown error"}`
+          );
+        }
+      } catch (error) {
+        console.error("❌ Error saat fetch API:", error);
+        alert(`❌ Network Error: ${error.message}`);
+      }
+    },
+    [playerId], // ✅ Tambahkan playerId ke dependency
+  );
 
   useEffect(() => {
     const selectedDateStr = format(selectedDay, "yyyy-MM-dd");
-
     setItineraryData((prev) => {
       if (prev[selectedDateStr]) return prev;
-
       return { ...prev, [selectedDateStr]: [] };
     });
   }, [selectedDay, setItineraryData]);
@@ -147,7 +163,6 @@ const scheduleNewReminder = useCallback(
         }
         return acc;
       }, {});
-
       localStorage.setItem("itinerary_data", JSON.stringify(cleanedData));
     } catch {
       // optional handling
@@ -165,21 +180,23 @@ const scheduleNewReminder = useCallback(
           activityData.time,
         );
 
-        // Validasi: waktu harus di masa depan
         const reminderTime = new Date(
           deliveryTimeISO.replace(" GMT+0800", "+08:00"),
         );
         const now = new Date();
 
-        if (reminderTime <= now) {
+        // ✅ Validasi dengan buffer 1 menit (60 detik)
+        const minTime = new Date(now.getTime() + 60000);
+
+        if (reminderTime <= minTime) {
           alert(
-            "📅 Your scheduled time is too soon. The reminder cannot be set, but the activity is saved.",
+            "⚠️ Waktu reminder terlalu dekat (kurang dari 1 menit). Aktivitas tetap disimpan tapi reminder tidak dijadwalkan.",
           );
           return;
         }
 
         await scheduleNewReminder(
-          `${title}`,
+          title,
           `Aktivitasmu akan dimulai pukul ${activityData.time}!`,
           deliveryTimeISO,
         );
@@ -200,7 +217,6 @@ const scheduleNewReminder = useCallback(
       isNew: false,
     };
 
-    // 1. JADWALKAN PENGINGAT
     try {
       const title = pendingActivity.activity || "Aktivitas";
       const deliveryTimeISO = calculateReminderTime(
@@ -208,15 +224,15 @@ const scheduleNewReminder = useCallback(
         pendingActivity.time,
       );
 
-      // Validasi waktu
       const reminderTime = new Date(
         deliveryTimeISO.replace(" GMT+0800", "+08:00"),
       );
       const now = new Date();
+      const minTime = new Date(now.getTime() + 60000);
 
-      if (reminderTime <= now) {
+      if (reminderTime <= minTime) {
         alert(
-          "⚠️ Waktu aktivitas sudah lewat. Reminder tidak dapat dijadwalkan, tapi jadwal tetap disimpan.",
+          "⚠️ Waktu aktivitas terlalu dekat. Reminder tidak dapat dijadwalkan, tapi jadwal tetap disimpan.",
         );
       } else {
         await scheduleNewReminder(
@@ -229,7 +245,6 @@ const scheduleNewReminder = useCallback(
       console.error("Gagal menjadwalkan notifikasi:", e);
     }
 
-    // 2. SIMPAN DATA JADWAL (tetap simpan meskipun reminder gagal)
     setItineraryData((prev) => ({
       ...prev,
       [pendingDateStr]: [...(prev[pendingDateStr] || []), newActivity],
@@ -240,14 +255,10 @@ const scheduleNewReminder = useCallback(
   }, [setItineraryData, pendingActivity, pendingDateStr, scheduleNewReminder]);
 
   const handlePaymentSuccess = useCallback(async () => {
-    // DEBUG LOG 1: Konfirmasi handlePaymentSuccess dipanggil
     console.log("DEBUG-1: handlePaymentSuccess dipanggil");
-
     setIsPremium(true);
     localStorage.setItem(PREMIUM_STORAGE_KEY, "true");
     setShowSubscriptionModal(false);
-
-    // Panggil fungsi yang menangani penjadwalan & penyimpanan pending
     await scheduleAndSavePendingActivity();
   }, [scheduleAndSavePendingActivity]);
 
