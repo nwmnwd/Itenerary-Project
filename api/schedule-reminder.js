@@ -9,12 +9,29 @@ export default async function handler(req, res) {
 
   const { title, content, deliveryTime, userId } = req.body;
 
+  // ✅ ENVIRONMENT DETECTION
+  const isDevelopment = process.env.NODE_ENV === 'development' || 
+                        process.env.VERCEL_ENV === 'development';
+
+  // ✅ Gunakan API Key yang sesuai environment
+  const ONESIGNAL_APP_ID = isDevelopment 
+    ? process.env.ONESIGNAL_DEV_APP_ID  // Development App ID
+    : process.env.ONESIGNAL_APP_ID;     // Production App ID
+
+  const ONESIGNAL_API_KEY = isDevelopment
+    ? process.env.ONESIGNAL_DEV_REST_API_KEY  // Development API Key
+    : process.env.ONESIGNAL_REST_API_KEY;     // Production API Key
+
+  console.log('🌍 Environment:', isDevelopment ? 'DEVELOPMENT' : 'PRODUCTION');
+  console.log('🔧 Using App ID:', ONESIGNAL_APP_ID);
+
   // ✅ Validasi Environment Variables
-  if (!process.env.ONESIGNAL_REST_API_KEY) {
-    console.error('❌ ONESIGNAL_REST_API_KEY not configured');
+  if (!ONESIGNAL_API_KEY) {
+    console.error('❌ ONESIGNAL API KEY not configured');
     return res.status(500).json({ 
       success: false, 
-      error: 'Server configuration error: Missing API key' 
+      error: 'Server configuration error: Missing API key',
+      environment: isDevelopment ? 'development' : 'production'
     });
   }
 
@@ -124,7 +141,7 @@ export default async function handler(req, res) {
 
     // ✅ Prepare OneSignal payload
     const payload = {
-      app_id: process.env.ONESIGNAL_APP_ID || '48d40efc-bfd6-44f5-ada5-30f2d1a17718',
+      app_id: ONESIGNAL_APP_ID,
       
       // ✅ FIXED: Gunakan include_player_ids (bukan include_subscription_ids)
       ...(userId 
@@ -146,7 +163,8 @@ export default async function handler(req, res) {
       data: {
         type: 'activity_reminder',
         scheduled_time: deliveryTimeStr,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        environment: isDevelopment ? 'development' : 'production'
       },
 
       // ✅ Tambahan: Pastikan notif muncul meskipun app terbuka
@@ -160,7 +178,7 @@ export default async function handler(req, res) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Basic ${process.env.ONESIGNAL_REST_API_KEY}`,
+        'Authorization': `Basic ${ONESIGNAL_API_KEY}`,
       },
       body: JSON.stringify(payload),
     });
@@ -181,6 +199,7 @@ export default async function handler(req, res) {
         scheduledFor: deliveryDate.toISOString(),
         scheduledForUTC: deliveryDate.toUTCString(),
         sendAfter: sendAfter,
+        environment: isDevelopment ? 'development' : 'production',
         debug: {
           localTime: deliveryTimeStr,
           utcTime: deliveryDate.toISOString(),

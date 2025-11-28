@@ -4,6 +4,31 @@ import SchedulePage from "./components/SchedulePage.jsx";
 import { Analytics } from "@vercel/analytics/react";
 import "./App.css";
 
+// ✅ KONFIGURASI: Gunakan environment variables
+const ONESIGNAL_CONFIG = {
+  // Development (localhost)
+  development: {
+    appId: "a22792a6-2f23-4d36-8c9f-12fccbb558bc", // ← Development App ID
+    serviceWorkerPath: 'OneSignalSDKWorker.js',
+  },
+  // Production (Vercel)
+  production: {
+    appId: "48d40efc-bfd6-44f5-ada5-30f2d1a17718",
+    serviceWorkerPath: 'OneSignalSDKWorker.js',
+  }
+};
+
+// ✅ Deteksi environment
+const isProduction = window.location.hostname !== 'localhost' && 
+                     window.location.hostname !== '127.0.0.1';
+
+const currentConfig = isProduction 
+  ? ONESIGNAL_CONFIG.production 
+  : ONESIGNAL_CONFIG.development;
+
+console.log('🌍 Environment:', isProduction ? 'PRODUCTION' : 'DEVELOPMENT');
+console.log('🔧 Using App ID:', currentConfig.appId);
+
 function App() {
   // ✅ Prevent double initialization dengan useRef
   const oneSignalInitialized = useRef(false);
@@ -23,14 +48,14 @@ function App() {
 
         // ✅ Konfigurasi yang benar untuk Vercel
         await OneSignal.init({
-          appId: "48d40efc-bfd6-44f5-ada5-30f2d1a17718",
+          appId: currentConfig.appId,
           allowLocalhostAsSecureOrigin: true,
           
           // ✅ Path untuk Service Worker (tanpa leading slash)
           serviceWorkerParam: { 
             scope: '/' 
           },
-          serviceWorkerPath: 'OneSignalSDKWorker.js', // ← Benar: tanpa '/'
+          serviceWorkerPath: currentConfig.serviceWorkerPath,
           
           // ✅ Notifikasi otomatis
           notifyButton: {
@@ -150,7 +175,8 @@ function App() {
 
         // Optional: Send a test tag
         await OneSignal.User.addTag("app_user", "true");
-        console.log("✅ User tag added");
+        await OneSignal.User.addTag("environment", isProduction ? "production" : "development");
+        console.log("✅ User tags added");
 
       } catch (error) {
         console.error("❌ Error initializing OneSignal:", error);
