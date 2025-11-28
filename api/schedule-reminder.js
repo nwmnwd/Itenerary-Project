@@ -26,15 +26,6 @@ export default async function handler(req, res) {
     });
   }
 
-  // Validasi tipe data deliveryTime harus string
-  if (typeof deliveryTime !== 'string') {
-    return res.status(400).json({
-      success: false,
-      error: 'deliveryTime must be a string in format: YYYY-MM-DD HH:mm:ss GMT+0800',
-      receivedType: typeof deliveryTime
-    });
-  }
-
   try {
     // ✅ Debug: Log received data
     console.log('📥 Received data:', {
@@ -45,27 +36,28 @@ export default async function handler(req, res) {
       userId
     });
 
-    // ✅ Pastikan deliveryTime adalah string
+    // ✅ CRITICAL FIX: Pastikan deliveryTime adalah string
+    let deliveryTimeStr = deliveryTime;
+    
     if (typeof deliveryTime !== 'string') {
-      // Convert to string if not
       console.warn('⚠️ deliveryTime bukan string, converting...');
-      deliveryTime = String(deliveryTime);
+      deliveryTimeStr = String(deliveryTime);
     }
 
     // ✅ Parse waktu dengan timezone yang benar
     let deliveryDate;
     
-    if (deliveryTime.includes('GMT+0800')) {
+    if (deliveryTimeStr.includes('GMT+0800')) {
       // Format: "2025-11-25 23:10:00 GMT+0800"
       // Convert GMT+0800 to ISO format
-      const isoString = deliveryTime.replace(' GMT+0800', '+08:00');
+      const isoString = deliveryTimeStr.replace(' GMT+0800', '+08:00');
       deliveryDate = new Date(isoString);
-    } else if (deliveryTime.includes('+08:00')) {
+    } else if (deliveryTimeStr.includes('+08:00')) {
       // Format: "2025-11-25T23:10:00+08:00"
-      deliveryDate = new Date(deliveryTime);
+      deliveryDate = new Date(deliveryTimeStr);
     } else {
       // Assume UTC if no timezone specified
-      deliveryDate = new Date(deliveryTime);
+      deliveryDate = new Date(deliveryTimeStr);
     }
     
     // Validasi format tanggal
@@ -73,7 +65,7 @@ export default async function handler(req, res) {
       return res.status(400).json({
         success: false,
         error: 'Invalid date format. Use: YYYY-MM-DD HH:mm:ss GMT+0800 or ISO format',
-        received: deliveryTime
+        received: deliveryTimeStr
       });
     }
 
@@ -98,19 +90,13 @@ export default async function handler(req, res) {
     console.log('📤 Scheduling notification:', {
       title,
       content,
-      deliveryTime,
+      deliveryTimeOriginal: deliveryTime,
+      deliveryTimeProcessed: deliveryTimeStr,
       deliveryDateISO: deliveryDate.toISOString(),
       sendAfter,
       userId: userId || 'All subscribers',
       currentTime: now.toISOString()
     });
-
-    // ✅ DEVELOPMENT MODE: Jika di localhost, gunakan test mode
-    const isLocalhost = req.headers.host?.includes('localhost');
-    
-    if (isLocalhost && !userId) {
-      console.log('⚠️ LOCALHOST TEST MODE: Sending to test segment');
-    }
 
     // ✅ Prepare OneSignal payload
     const payload = {
@@ -135,13 +121,12 @@ export default async function handler(req, res) {
       // ✅ Data custom
       data: {
         type: 'activity_reminder',
-        scheduled_time: deliveryTime,
+        scheduled_time: deliveryTimeStr,
         timestamp: Date.now()
       },
 
       // ✅ Tambahan: Pastikan notif muncul meskipun app terbuka
       web_push_topic: 'reminder',
-      chrome_web_icon: 'https://your-icon-url.com/icon.png', // Optional
     };
 
     console.log('📡 Sending to OneSignal:', JSON.stringify(payload, null, 2));
@@ -173,7 +158,7 @@ export default async function handler(req, res) {
         scheduledForUTC: deliveryDate.toUTCString(),
         sendAfter: sendAfter,
         debug: {
-          localTime: deliveryTime,
+          localTime: deliveryTimeStr,
           utcTime: deliveryDate.toISOString(),
           unixTimestamp: sendAfter
         }
