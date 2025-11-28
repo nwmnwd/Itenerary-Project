@@ -18,15 +18,19 @@ const ONESIGNAL_CONFIG = {
   }
 };
 
-// ✅ Deteksi environment
-const isProduction = window.location.hostname !== 'localhost' && 
-                     window.location.hostname !== '127.0.0.1';
+// ✅ Deteksi environment dengan logging lebih detail
+const hostname = window.location.hostname;
+const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+const isProduction = !isLocalhost;
 
 const currentConfig = isProduction 
   ? ONESIGNAL_CONFIG.production 
   : ONESIGNAL_CONFIG.development;
 
-console.log('🌍 Environment:', isProduction ? 'PRODUCTION' : 'DEVELOPMENT');
+console.log('🌍 Environment Detection:');
+console.log('   - Hostname:', hostname);
+console.log('   - Is Localhost:', isLocalhost);
+console.log('   - Environment:', isProduction ? 'PRODUCTION' : 'DEVELOPMENT');
 console.log('🔧 Using App ID:', currentConfig.appId);
 
 function App() {
