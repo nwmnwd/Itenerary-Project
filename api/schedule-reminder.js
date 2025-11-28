@@ -27,22 +27,43 @@ export default async function handler(req, res) {
   }
 
   try {
+    // ✅ CRITICAL FIX: Konversi deliveryTime ke string terlebih dahulu
+    let deliveryTimeStr;
+    
+    if (typeof deliveryTime === 'string') {
+      deliveryTimeStr = deliveryTime;
+    } else if (typeof deliveryTime === 'number') {
+      // Jika unix timestamp (seconds)
+      deliveryTimeStr = new Date(deliveryTime * 1000).toISOString();
+    } else if (deliveryTime && typeof deliveryTime === 'object') {
+      // Jika Date object atau object dengan toISOString
+      if (typeof deliveryTime.toISOString === 'function') {
+        deliveryTimeStr = deliveryTime.toISOString();
+      } else if (deliveryTime.unixTimestamp) {
+        // Jika object dengan unixTimestamp property
+        deliveryTimeStr = new Date(deliveryTime.unixTimestamp * 1000).toISOString();
+      } else {
+        // Fallback: coba convert ke string
+        deliveryTimeStr = String(deliveryTime);
+      }
+    } else {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid deliveryTime format',
+        received: deliveryTime,
+        type: typeof deliveryTime
+      });
+    }
+
     // ✅ Debug: Log received data
     console.log('📥 Received data:', {
       title,
       content,
       deliveryTime,
       deliveryTimeType: typeof deliveryTime,
+      deliveryTimeStr,
       userId
     });
-
-    // ✅ CRITICAL FIX: Pastikan deliveryTime adalah string
-    let deliveryTimeStr = deliveryTime;
-    
-    if (typeof deliveryTime !== 'string') {
-      console.warn('⚠️ deliveryTime bukan string, converting...');
-      deliveryTimeStr = String(deliveryTime);
-    }
 
     // ✅ Parse waktu dengan timezone yang benar
     let deliveryDate;
@@ -55,8 +76,11 @@ export default async function handler(req, res) {
     } else if (deliveryTimeStr.includes('+08:00')) {
       // Format: "2025-11-25T23:10:00+08:00"
       deliveryDate = new Date(deliveryTimeStr);
+    } else if (deliveryTimeStr.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)) {
+      // ISO format tanpa timezone (assume UTC)
+      deliveryDate = new Date(deliveryTimeStr);
     } else {
-      // Assume UTC if no timezone specified
+      // Try parsing as-is
       deliveryDate = new Date(deliveryTimeStr);
     }
     
