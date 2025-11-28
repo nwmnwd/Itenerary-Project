@@ -1,4 +1,6 @@
-
+// api/schedule-reminder.js - Vercel Serverless Function
+/* eslint-disable no-undef */
+/* global process */
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -34,6 +36,22 @@ export default async function handler(req, res) {
   }
 
   try {
+    // ✅ Debug: Log received data
+    console.log('📥 Received data:', {
+      title,
+      content,
+      deliveryTime,
+      deliveryTimeType: typeof deliveryTime,
+      userId
+    });
+
+    // ✅ Pastikan deliveryTime adalah string
+    if (typeof deliveryTime !== 'string') {
+      // Convert to string if not
+      console.warn('⚠️ deliveryTime bukan string, converting...');
+      deliveryTime = String(deliveryTime);
+    }
+
     // ✅ Parse waktu dengan timezone yang benar
     let deliveryDate;
     
@@ -86,6 +104,13 @@ export default async function handler(req, res) {
       userId: userId || 'All subscribers',
       currentTime: now.toISOString()
     });
+
+    // ✅ DEVELOPMENT MODE: Jika di localhost, gunakan test mode
+    const isLocalhost = req.headers.host?.includes('localhost');
+    
+    if (isLocalhost && !userId) {
+      console.log('⚠️ LOCALHOST TEST MODE: Sending to test segment');
+    }
 
     // ✅ Prepare OneSignal payload
     const payload = {
