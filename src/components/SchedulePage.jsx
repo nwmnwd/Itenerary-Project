@@ -55,7 +55,7 @@ export default function SchedulePage() {
       return false;
     }
   });
-  
+
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [pendingActivity, setPendingActivity] = useState(null);
   const [pendingDateStr, setPendingDateStr] = useState(null);
@@ -73,20 +73,25 @@ export default function SchedulePage() {
     const getPlayerId = async () => {
       try {
         // Tunggu sampai OneSignal terinisialisasi
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+
         const subscriptionId = OneSignal.User.PushSubscription.id;
-        
+
         if (subscriptionId) {
           console.log("✅ Player ID ditemukan:", subscriptionId);
           setPlayerId(subscriptionId);
         } else {
-          console.warn("⚠️ Player ID tidak ditemukan. User mungkin belum subscribe.");
-          
+          console.warn(
+            "⚠️ Player ID tidak ditemukan. User mungkin belum subscribe.",
+          );
+
           // Coba ambil dari localStorage sebagai fallback
-          const savedPlayerId = localStorage.getItem('onesignal_player_id');
+          const savedPlayerId = localStorage.getItem("onesignal_player_id");
           if (savedPlayerId) {
-            console.log("📦 Menggunakan Player ID dari localStorage:", savedPlayerId);
+            console.log(
+              "📦 Menggunakan Player ID dari localStorage:",
+              savedPlayerId,
+            );
             setPlayerId(savedPlayerId);
           }
         }
@@ -103,11 +108,12 @@ export default function SchedulePage() {
     async (title, content, deliveryTime) => {
       try {
         // ✅ CRITICAL FIX: Pastikan deliveryTime adalah string
-        const deliveryTimeStr = typeof deliveryTime === 'string' 
-          ? deliveryTime 
-          : deliveryTime.toISOString 
-            ? deliveryTime.toISOString() 
-            : String(deliveryTime);
+        const deliveryTimeStr =
+          typeof deliveryTime === "string"
+            ? deliveryTime
+            : deliveryTime.toISOString
+              ? deliveryTime.toISOString()
+              : String(deliveryTime);
 
         console.log("📤 Sending notification:", {
           title,
@@ -119,7 +125,9 @@ export default function SchedulePage() {
 
         // ✅ Validasi Player ID
         if (!playerId) {
-          console.warn("⚠️ Player ID tidak tersedia. Notifikasi akan dikirim ke semua subscriber.");
+          console.warn(
+            "⚠️ Player ID tidak tersedia. Notifikasi akan dikirim ke semua subscriber.",
+          );
         }
 
         const apiUrl = window.location.origin + "/api/schedule-reminder";
@@ -143,15 +151,14 @@ export default function SchedulePage() {
           console.log("✅ Notifikasi berhasil dijadwalkan!", data);
           alert(
             `✅ Reminder successfully scheduled!\n\n` +
-            `📌 Activity: ${title}\n` +
-            `🕐 Time: ${deliveryTimeStr}\n` +
-            `👥 Recipients: ${data.recipients || 'All subscribers'}`
+              `📌 Activity: ${title}\n` +
+              `🕐 Time: ${deliveryTimeStr}\n`,
           );
         } else {
           console.error("❌ Gagal menjadwalkan notifikasi:", data);
           alert(
             `❌ Failed to schedule reminder\n\n` +
-            `Error: ${data.error || "Unknown error"}`
+              `Error: ${data.error || "Unknown error"}`,
           );
         }
       } catch (error) {
