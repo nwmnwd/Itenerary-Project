@@ -8,9 +8,6 @@ import {
   parseISO,
   differenceInCalendarDays,
   format,
-  setMinutes,
-  setHours,
-  subMinutes,
 } from "date-fns";
 import SubscriptionModal from "./SubscriptionModal";
 import { ChevronUpIcon } from "@heroicons/react/solid";
@@ -19,23 +16,13 @@ import OneSignal from "react-onesignal";
 
 const PREMIUM_STORAGE_KEY = "user_is_premium";
 
+/* -------------------------------------------------------------
+   ⭐ FIX UTAMA: HITUNG REMINDER 5 MENIT SEBELUM, FORMAT ISO AMAN
+--------------------------------------------------------------*/
 const calculateReminderTime = (dateStr, timeStr) => {
-  const [hours, minutes] = timeStr.split(":").map(Number);
-
-  let reminderDate = parseISO(dateStr);
-  reminderDate = setHours(reminderDate, hours);
-  reminderDate = setMinutes(reminderDate, minutes);
-
-  const finalReminderTime = subMinutes(reminderDate, 5);
-
-  const year = finalReminderTime.getFullYear();
-  const month = String(finalReminderTime.getMonth() + 1).padStart(2, "0");
-  const day = String(finalReminderTime.getDate()).padStart(2, "0");
-  const hour = String(finalReminderTime.getHours()).padStart(2, "0");
-  const minute = String(finalReminderTime.getMinutes()).padStart(2, "0");
-  const second = String(finalReminderTime.getSeconds()).padStart(2, "0");
-
-  return `${year}-${month}-${day}T${hour}:${minute}:${second}+08:00`;
+  const activityDate = new Date(`${dateStr}T${timeStr}:00+08:00`);
+  const reminderTime = new Date(activityDate.getTime() - 5 * 60000);
+  return reminderTime.toISOString(); // 👉 OneSignal expects UTC ISO
 };
 
 export default function SchedulePage() {
@@ -49,8 +36,7 @@ export default function SchedulePage() {
 
   const [isPremium, setIsPremium] = useState(() => {
     try {
-      const saved = localStorage.getItem(PREMIUM_STORAGE_KEY);
-      return saved === "true";
+      return localStorage.getItem(PREMIUM_STORAGE_KEY) === "true";
     } catch {
       return false;
     }
@@ -59,6 +45,7 @@ export default function SchedulePage() {
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [pendingActivity, setPendingActivity] = useState(null);
   const [pendingDateStr, setPendingDateStr] = useState(null);
+
   const [itineraryData, setItineraryData] = useState(() => {
     try {
       const saved = localStorage.getItem("itinerary_data");
@@ -68,152 +55,109 @@ export default function SchedulePage() {
     }
   });
 
-  // ✅ Dapatkan Player ID dari OneSignal
+  /* -------------------------------------------------------------
+     GET PLAYER ID FROM ONESIGNAL
+  --------------------------------------------------------------*/
   useEffect(() => {
     const getPlayerId = async () => {
       try {
-        // Tunggu sampai OneSignal terinisialisasi
         await new Promise((resolve) => setTimeout(resolve, 3000));
-
         const subscriptionId = OneSignal.User.PushSubscription.id;
 
         if (subscriptionId) {
-          console.log("✅ Player ID ditemukan:", subscriptionId);
           setPlayerId(subscriptionId);
-        } else {
-          console.warn(
-            "⚠️ Player ID tidak ditemukan. User mungkin belum subscribe.",
-          );
-
-          // Coba ambil dari localStorage sebagai fallback
-          const savedPlayerId = localStorage.getItem("onesignal_player_id");
-          if (savedPlayerId) {
-            console.log(
-              "📦 Menggunakan Player ID dari localStorage:",
-              savedPlayerId,
-            );
-            setPlayerId(savedPlayerId);
-          }
+          return;
         }
+
+        // fallback
+        const saved = localStorage.getItem("onesignal_player_id");
+        if (saved) setPlayerId(saved);
       } catch (error) {
-        console.error("❌ Error mendapatkan Player ID:", error);
+        console.error("Error getting Player ID:", error);
       }
     };
-
     getPlayerId();
   }, []);
 
-  // ✅ Fungsi schedule dengan validasi yang lebih baik
+  /* -------------------------------------------------------------
+     ⭐ FIX: FUNCTION SCHEDULE NOTIFICATION TANPA ALERT()
+  --------------------------------------------------------------*/
   const scheduleNewReminder = useCallback(
     async (title, content, deliveryTime) => {
       try {
-        // ✅ CRITICAL FIX: Pastikan deliveryTime adalah string
-        const deliveryTimeStr =
+        const isoTime =
           typeof deliveryTime === "string"
             ? deliveryTime
-            : deliveryTime.toISOString
-              ? deliveryTime.toISOString()
-              : String(deliveryTime);
+            : deliveryTime.toISOString();
 
-        console.log("📤 Sending notification:", {
-          title,
-          content,
-          deliveryTime: deliveryTimeStr,
-          deliveryTimeType: typeof deliveryTimeStr,
-          playerId,
-        });
-
-        // ✅ Validasi Player ID
         if (!playerId) {
-          console.warn(
-            "⚠️ Player ID tidak tersedia. Notifikasi akan dikirim ke semua subscriber.",
-          );
+          console.warn("Player ID not available. Cannot target user.");
+          return;
         }
 
-        const apiUrl = window.location.origin + "/api/schedule-reminder";
-
-        const response = await fetch(apiUrl, {
+        const response = await fetch("/api/schedule-reminder", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            title: title,
-            content: content,
-            deliveryTime: deliveryTimeStr, // ✅ Kirim sebagai string
+            title,
+            content,
+            deliveryTime: isoTime,
             userId: playerId,
           }),
         });
 
         const data = await response.json();
 
-        if (response.ok && data.success) {
-          console.log("✅ Notifikasi berhasil dijadwalkan!", data);
-          alert(
-            `✅ Reminder successfully scheduled!\n\n` +
-              `📌 Activity: ${title}\n` +
-              `🕐 Time: ${deliveryTimeStr}\n`,
-          );
+        if (!response.ok) {
+          console.error("Failed to schedule push:", data);
         } else {
-          console.error("❌ Gagal menjadwalkan notifikasi:", data);
-          alert(
-            `❌ Failed to schedule reminder\n\n` +
-              `Error: ${data.error || "Unknown error"}`,
-          );
+          console.log("Push scheduled successfully:", data);
         }
       } catch (error) {
-        console.error("❌ Error saat fetch API:", error);
-        alert(`❌ Network Error: ${error.message}`);
+        console.error("Network error:", error);
       }
     },
     [playerId],
   );
 
+  /* -------------------------------------------------------------
+     INITIALIZE ITINERARY DATA STORAGE
+  --------------------------------------------------------------*/
   useEffect(() => {
-    const selectedDateStr = format(selectedDay, "yyyy-MM-dd");
+    const dateStr = format(selectedDay, "yyyy-MM-dd");
     setItineraryData((prev) => {
-      if (prev[selectedDateStr]) return prev;
-      return { ...prev, [selectedDateStr]: [] };
+      if (prev[dateStr]) return prev;
+      return { ...prev, [dateStr]: [] };
     });
-  }, [selectedDay, setItineraryData]);
+  }, [selectedDay]);
 
   useEffect(() => {
     try {
-      const cleanedData = Object.keys(itineraryData).reduce((acc, dateStr) => {
-        if (itineraryData[dateStr] && itineraryData[dateStr].length > 0) {
-          acc[dateStr] = itineraryData[dateStr];
-        }
-        return acc;
-      }, {});
-      localStorage.setItem("itinerary_data", JSON.stringify(cleanedData));
-    } catch {
-      // optional handling
-    }
+      const cleaned = {};
+      for (const date in itineraryData) {
+        if (itineraryData[date].length > 0) cleaned[date] = itineraryData[date];
+      }
+      localStorage.setItem("itinerary_data", JSON.stringify(cleaned));
+    } catch {}
   }, [itineraryData]);
 
+  /* -------------------------------------------------------------
+     ⭐ FIX: SCHEDULE ACTIVITY (BENAR-BENAR 5 MENIT SEBELUM)
+  --------------------------------------------------------------*/
   const scheduleActivity = useCallback(
     async (activityData, dateStr) => {
       if (!activityData.activity) return;
 
       try {
-        const title = activityData.activity || "Aktivitas";
-        const deliveryTimeISO = calculateReminderTime(
-          dateStr,
-          activityData.time,
-        );
+        const title = activityData.activity;
+        const deliveryTimeISO = calculateReminderTime(dateStr, activityData.time);
 
-        const reminderTime = new Date(
-          deliveryTimeISO.replace(" GMT+0800", "+08:00"),
-        );
+        const reminderTime = new Date(deliveryTimeISO);
         const now = new Date();
-
-        // ✅ Validasi dengan buffer 1 menit (60 detik)
         const minTime = new Date(now.getTime() + 60000);
 
         if (reminderTime <= minTime) {
-          alert(
-            "⚠️ Waktu reminder terlalu dekat (kurang dari 1 menit). Aktivitas tetap disimpan tapi reminder tidak dijadwalkan.",
-          );
+          console.warn("Reminder terlalu dekat, tidak dijadwalkan.");
           return;
         }
 
@@ -222,14 +166,16 @@ export default function SchedulePage() {
           `Aktivitasmu akan dimulai pukul ${activityData.time}!`,
           deliveryTimeISO,
         );
-      } catch (e) {
-        console.error("Gagal menjadwalkan notifikasi:", e);
-        alert(`Gagal menjadwalkan reminder: ${e.message}`);
+      } catch (error) {
+        console.error("Error scheduling activity:", error);
       }
     },
     [scheduleNewReminder],
   );
 
+  /* -------------------------------------------------------------
+     HANDLE PREMIUM & PENDING ACTIVITY
+  --------------------------------------------------------------*/
   const scheduleAndSavePendingActivity = useCallback(async () => {
     if (!pendingActivity || !pendingDateStr) return;
 
@@ -240,33 +186,28 @@ export default function SchedulePage() {
     };
 
     try {
-      const title = pendingActivity.activity || "Aktivitas";
+      const title = pendingActivity.activity;
       const deliveryTimeISO = calculateReminderTime(
         pendingDateStr,
         pendingActivity.time,
       );
 
-      const reminderTime = new Date(
-        deliveryTimeISO.replace(" GMT+0800", "+08:00"),
-      );
+      const reminderTime = new Date(deliveryTimeISO);
       const now = new Date();
       const minTime = new Date(now.getTime() + 60000);
 
-      if (reminderTime <= minTime) {
-        alert(
-          "⚠️ Waktu aktivitas terlalu dekat. Reminder tidak dapat dijadwalkan, tapi jadwal tetap disimpan.",
-        );
-      } else {
+      if (reminderTime > minTime) {
         await scheduleNewReminder(
           title,
           `Aktivitasmu akan dimulai pukul ${pendingActivity.time}!`,
           deliveryTimeISO,
         );
       }
-    } catch (e) {
-      console.error("Gagal menjadwalkan notifikasi:", e);
+    } catch (error) {
+      console.error("Error scheduling pending activity:", error);
     }
 
+    // Save itinerary item
     setItineraryData((prev) => ({
       ...prev,
       [pendingDateStr]: [...(prev[pendingDateStr] || []), newActivity],
@@ -274,109 +215,81 @@ export default function SchedulePage() {
 
     setPendingActivity(null);
     setPendingDateStr(null);
-  }, [setItineraryData, pendingActivity, pendingDateStr, scheduleNewReminder]);
+  }, [pendingActivity, pendingDateStr, scheduleNewReminder]);
 
   const handlePaymentSuccess = useCallback(async () => {
-    console.log("DEBUG-1: handlePaymentSuccess dipanggil");
     setIsPremium(true);
     localStorage.setItem(PREMIUM_STORAGE_KEY, "true");
     setShowSubscriptionModal(false);
     await scheduleAndSavePendingActivity();
   }, [scheduleAndSavePendingActivity]);
 
-  const handleShowSubscriptionForSave = useCallback((activityData, dateStr) => {
-    setPendingActivity(activityData);
+  const handleShowSubscriptionForSave = useCallback((data, dateStr) => {
+    setPendingActivity(data);
     setPendingDateStr(dateStr);
     setShowSubscriptionModal(true);
   }, []);
 
+  /* -------------------------------------------------------------
+     TODAY / TIMELINE LOGIC
+  --------------------------------------------------------------*/
   const selectedDayRef = useRef(selectedDay);
   useEffect(() => {
     selectedDayRef.current = selectedDay;
   }, [selectedDay]);
 
-  const todayDateStr = useMemo(
+  const todayStr = useMemo(
     () => format(startOfDay(new Date()), "yyyy-MM-dd"),
     [],
   );
 
   useEffect(() => {
     const today = startOfDay(new Date());
-    if (selectedDayRef.current.getTime() === today.getTime()) {
-      setTodayCurrentActivity(currentActivity);
-    } else {
-      setTodayCurrentActivity(null);
-    }
+    setTodayCurrentActivity(
+      selectedDayRef.current.getTime() === today.getTime()
+        ? currentActivity
+        : null,
+    );
   }, [currentActivity]);
 
-  useEffect(() => {
-    const todayActivities = itineraryData[todayDateStr] || [];
-
-    if (todayActivities.length === 0) {
-      setTodayCurrentActivity(null);
-      setCurrentActivity(null);
-    } else if (todayCurrentActivity) {
-      const stillExists = todayActivities.some(
-        (item) => item.id === todayCurrentActivity.id,
-      );
-      if (!stillExists) {
-        setTodayCurrentActivity(null);
-      }
-    }
-  }, [itineraryData, todayDateStr, todayCurrentActivity]);
+  const todayActivities = itineraryData[todayStr] || [];
 
   const todayFirstActivity = useMemo(() => {
-    const list = itineraryData[todayDateStr] || [];
-    if (list.length === 0) return null;
+    if (todayActivities.length === 0) return null;
 
-    const sorted = [...list].sort((a, b) => {
-      const timeToMinutes = (timeStr) => {
-        const [hours, minutes] = timeStr.split(":").map(Number);
-        return hours * 60 + minutes;
-      };
-      return timeToMinutes(a.time) - timeToMinutes(b.time);
+    const sorted = [...todayActivities].sort((a, b) => {
+      const [h1, m1] = a.time.split(":").map(Number);
+      const [h2, m2] = b.time.split(":").map(Number);
+      return h1 * 60 + m1 - (h2 * 60 + m2);
     });
 
     return sorted[0];
-  }, [itineraryData, todayDateStr]);
+  }, [todayActivities]);
 
   const todayDayNumber = useMemo(() => {
-    const datesWithData = Object.keys(itineraryData)
-      .filter(
-        (dateStr) =>
-          itineraryData[dateStr] && itineraryData[dateStr].length > 0,
-      )
-      .sort();
+    const keys = Object.keys(itineraryData).filter(
+      (k) => itineraryData[k]?.length > 0,
+    );
 
-    if (datesWithData.length === 0) return 1;
+    if (keys.length === 0) return 1;
 
-    const first = datesWithData[0];
-    try {
-      const diff = differenceInCalendarDays(
-        parseISO(todayDateStr),
-        parseISO(first),
-      );
-      return diff >= 0 ? diff + 1 : 1;
-    } catch {
-      return 1;
-    }
-  }, [itineraryData, todayDateStr]);
+    keys.sort();
+    const diff = differenceInCalendarDays(parseISO(todayStr), parseISO(keys[0]));
+    return diff >= 0 ? diff + 1 : 1;
+  }, [itineraryData, todayStr]);
 
-  const todayTotalItems = useMemo(() => {
-    return (itineraryData[todayDateStr] || []).length;
-  }, [itineraryData, todayDateStr]);
+  const todayTotalItems = todayActivities.length;
 
   const ToggleIcon = isCalendarOpen ? ChevronUpIcon : CalendarDate;
 
+  /* -------------------------------------------------------------
+     RENDER PAGE
+  --------------------------------------------------------------*/
   return (
     <div className="flex min-h-screen flex-col">
       <div className="sticky top-0 z-50 bg-white shadow-xs">
         <Header
-          todayCurrentActivity={
-            todayCurrentActivity == null
-              ? todayFirstActivity
-              : todayCurrentActivity
-          }
+          todayCurrentActivity={todayCurrentActivity ?? todayFirstActivity}
           completedCount={completedCount}
           totalItems={todayTotalItems}
           dayNumber={todayDayNumber}
@@ -385,7 +298,7 @@ export default function SchedulePage() {
         <div className="mx-2 mt-2 bg-white pb-2">
           <div
             id="calendar-panel"
-            className={`overflow-hidden transition-all duration-300 ease-in-out ${
+            className={`overflow-hidden transition-all duration-300 ${
               isCalendarOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
             }`}
           >
@@ -396,11 +309,11 @@ export default function SchedulePage() {
             <div className="flex-1">
               <SearchBox value={searchQuery} onChange={setSearchQuery} />
             </div>
+
             <button
               onClick={() => setIsCalendarOpen(!isCalendarOpen)}
-              className="rounded-full pr-4 text-indigo-500 transition-colors hover:bg-gray-100"
+              className="rounded-full pr-4 text-indigo-500 hover:bg-gray-100"
               aria-expanded={isCalendarOpen}
-              aria-controls="calendar-panel"
             >
               <ToggleIcon className="h-8 w-8" />
             </button>
@@ -421,6 +334,7 @@ export default function SchedulePage() {
           onScheduleActivity={scheduleActivity}
         />
       </main>
+
       {showSubscriptionModal && (
         <SubscriptionModal
           onPaymentSuccess={handlePaymentSuccess}

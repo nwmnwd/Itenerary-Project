@@ -8,12 +8,11 @@ export default async function handler(req, res) {
 
   const { title, content, deliveryTime, userId } = req.body;
 
-  // ✅ ENVIRONMENT DETECTION
+  // ENVIRONMENT
   const isDevelopment =
     process.env.NODE_ENV === "development" ||
     process.env.VERCEL_ENV === "development";
 
-  // ✅ Gunakan API Key yang sesuai environment
   const ONESIGNAL_APP_ID = isDevelopment
     ? process.env.ONESIGNAL_DEV_APP_ID
     : process.env.ONESIGNAL_APP_ID;
@@ -25,19 +24,14 @@ export default async function handler(req, res) {
   console.log("🌍 Environment:", isDevelopment ? "DEVELOPMENT" : "PRODUCTION");
   console.log("🔧 Using App ID:", ONESIGNAL_APP_ID);
 
-  // --- VALIDASI PENTING ---
-
-  // 1. Validasi Environment Variables
+  // VALIDATION
   if (!ONESIGNAL_API_KEY) {
-    console.error("❌ ONESIGNAL API KEY not configured");
     return res.status(500).json({
       success: false,
-      error: "Server configuration error: Missing API key",
-      environment: isDevelopment ? "development" : "production",
+      error: "Missing OneSignal API key",
     });
   }
 
-  // 2. Validasi input wajib
   if (!title || !content || !deliveryTime) {
     return res.status(400).json({
       success: false,
@@ -45,101 +39,79 @@ export default async function handler(req, res) {
     });
   }
 
-  // 3. ✅ CRITICAL: Validasi userId. Hanya kirim ke user spesifik.
   if (!userId) {
-    console.warn(
-      "⚠️ Scheduling stopped: userId is missing. Notification must be targeted.",
-    );
     return res.status(400).json({
       success: false,
-      error:
-        "Cannot schedule notification: User ID (Player ID) is required for targeted delivery.",
+      error: "Missing userId (Player ID)",
     });
   }
 
-  // --- PEMROSESAN WAKTU ---
+  // PROCESS DELIVERY TIME
+  let deliveryTimeStr;
+  if (typeof deliveryTime === "string") {
+    deliveryTimeStr = deliveryTime;
+  } else if (deliveryTime && typeof deliveryTime.toISOString === "function") {
+    deliveryTimeStr = deliveryTime.toISOString();
+  } else {
+    deliveryTimeStr = String(deliveryTime);
+  }
+
+  console.log("📥 Received:", { title, content, deliveryTimeStr, userId });
+
+  const deliveryDate = new Date(deliveryTimeStr);
+
+  if (isNaN(deliveryDate.getTime())) {
+    return res.status(400).json({
+      success: false,
+      error:
+        "Invalid date format. Expected ISO with timezone: YYYY-MM-DDTHH:mm:ss+08:00",
+      received: deliveryTimeStr,
+    });
+  }
+
+  const now = new Date();
+  const minTime = new Date(now.getTime() + 60000);
+
+  if (deliveryDate <= minTime) {
+    return res.status(400).json({
+      success: false,
+      error: "Delivery time must be at least 1 minute in the future",
+      deliveryDate: deliveryDate.toISOString(),
+      now: now.toISOString(),
+    });
+  }
+
+  // ⭐ FIX KRITIS: OneSignal TIDAK menerima ISO string (+08:00)
+  // OneSignal HARUS menerima format Date.toString()
+  const sendAfterFormatted = deliveryDate.toString(); 
+  console.log("⏰ OneSignal send_after:", sendAfterFormatted);
+
+  const payload = {
+    app_id: ONESIGNAL_APP_ID,
+    include_player_ids: [userId],
+
+    headings: { en: title },
+    contents: { en: content },
+
+    // ⭐ FIX UTAMA
+    send_after: sendAfterFormatted,
+
+    priority: 10,
+    ttl: 86400,
+
+    data: {
+      type: "activity_reminder",
+      scheduled_time: deliveryTimeStr,
+      timestamp: Date.now(),
+      environment: isDevelopment ? "development" : "production",
+    },
+
+    web_push_topic: "reminder",
+  };
+
+  console.log("📡 Sending payload:", payload);
 
   try {
-    let deliveryTimeStr;
-
-    // Konversi deliveryTime ke string/ISO format
-    if (typeof deliveryTime === "string") {
-      deliveryTimeStr = deliveryTime;
-    } else if (deliveryTime && typeof deliveryTime.toISOString === "function") {
-      deliveryTimeStr = deliveryTime.toISOString();
-    } else {
-      // Fallback string conversion for robustness
-      deliveryTimeStr = String(deliveryTime);
-    }
-
-    console.log("📥 Received data:", { title, content, deliveryTime: deliveryTimeStr, userId });
-
-    // ✅ KOREKSI KRITIS: Parsing menggunakan format ISO yang dikirim dari frontend
-    const deliveryDate = new Date(deliveryTimeStr);
-
-    // Validasi format tanggal
-    if (isNaN(deliveryDate.getTime())) {
-      return res.status(400).json({
-        success: false,
-        error:
-          "Invalid date format. Expected YYYY-MM-DDTHH:mm:ss+08:00 (ISO with offset)",
-        received: deliveryTimeStr,
-      });
-    }
-
-    // Validasi waktu harus di masa depan (dengan 1 menit buffer)
-    const now = new Date();
-    const bufferTime = new Date(now.getTime() + 60000);
-
-    if (deliveryDate <= bufferTime) {
-      return res.status(400).json({
-        success: false,
-        error: "Delivery time must be at least 1 minute in the future",
-        deliveryDate: deliveryDate.toISOString(),
-        currentTime: now.toISOString(),
-      });
-    }
-
-    // Convert ke UNIX timestamp (dalam detik)
-    const sendAfter = Math.floor(deliveryDate.getTime() / 1000);
-
-    // --- PEMBANGUNAN PAYLOAD ONESIGNAL ---
-
-    console.log("📤 Scheduling notification:", {
-      deliveryTimeOriginal: deliveryTime, // String asli dari frontend
-      deliveryTimeProcessed: deliveryTimeStr,
-      deliveryDateISO: deliveryDate.toISOString(), // Waktu dalam format ISO (UTC)
-      sendAfter, // UNIX timestamp (detik) yang akan digunakan OneSignal
-      currentTime: now.toISOString(), // Waktu saat ini (UTC)
-    });
-
-    const payload = {
-      app_id: ONESIGNAL_APP_ID,
-
-      // ✅ Hanya kirim ke USER ID yang spesifik
-      include_player_ids: [userId],
-
-      headings: { en: title },
-      contents: { en: content },
-
-      // Nilai send_after harus di masa depan
-      send_after: sendAfter, 
-      priority: 10,
-      ttl: 86400,
-
-      data: {
-        type: "activity_reminder",
-        scheduled_time: deliveryTimeStr,
-        timestamp: Date.now(),
-        environment: isDevelopment ? "development" : "production",
-      },
-      web_push_topic: "reminder",
-    };
-
-    console.log("📡 Sending to OneSignal...");
-
-    // --- KIRIM KE ONESIGNAL ---
-
     const response = await fetch("https://onesignal.com/api/v1/notifications", {
       method: "POST",
       headers: {
@@ -150,38 +122,28 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-    console.log("📬 OneSignal Response:", JSON.stringify(data, null, 2));
+    console.log("📬 OneSignal Response:", data);
 
     if (response.ok) {
-      console.log("✅ Notification scheduled successfully!");
-
       return res.status(200).json({
         success: true,
         notificationId: data.id,
-        recipients: data.recipients, 
+        recipients: data.recipients,
         message: "Notification scheduled successfully",
         scheduledFor: deliveryDate.toISOString(),
       });
-    } else {
-      console.error("❌ OneSignal API Error:", data);
-
-      const errorMessage =
-        data.errors?.[0] || "Failed to schedule notification";
-
-      return res.status(400).json({
-        success: false,
-        error: errorMessage,
-        details: data,
-        payload: payload,
-      });
     }
-  } catch (error) {
-    console.error("❌ Error scheduling notification:", error);
 
+    return res.status(400).json({
+      success: false,
+      error: data.errors?.[0] || "Failed to schedule notification",
+      details: data,
+    });
+  } catch (err) {
+    console.error("❌ Server Error:", err);
     return res.status(500).json({
       success: false,
-      error: error.message,
-      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      error: err.message,
     });
   }
 }

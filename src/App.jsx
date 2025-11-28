@@ -4,195 +4,156 @@ import SchedulePage from "./components/SchedulePage.jsx";
 import { Analytics } from "@vercel/analytics/react";
 import "./App.css";
 
-// ✅ KONFIGURASI: Gunakan environment variables
+// ==========================
+// 🔧 ENVIRONMENT CONFIG
+// ==========================
+
 const ONESIGNAL_CONFIG = {
-  // Development (localhost)
   development: {
-    appId: "a22792a6-2f23-4d36-8c9f-12fccbb558bc", // ← Development App ID
-    serviceWorkerPath: 'OneSignalSDKWorker.js',
+    appId: "a22792a6-2f23-4d36-8c9f-12fccbb558bc",
+    serviceWorkerPath: "OneSignalSDKWorker.js",
   },
-  // Production (Vercel)
   production: {
     appId: "48d40efc-bfd6-44f5-ada5-30f2d1a17718",
-    serviceWorkerPath: 'OneSignalSDKWorker.js',
-  }
+    serviceWorkerPath: "OneSignalSDKWorker.js",
+  },
 };
 
-// ✅ Deteksi environment dengan logging lebih detail
 const hostname = window.location.hostname;
-const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
 const isProduction = !isLocalhost;
 
-const currentConfig = isProduction 
-  ? ONESIGNAL_CONFIG.production 
+const currentConfig = isProduction
+  ? ONESIGNAL_CONFIG.production
   : ONESIGNAL_CONFIG.development;
 
-console.log('🌍 Environment Detection:');
-console.log('   - Hostname:', hostname);
-console.log('   - Is Localhost:', isLocalhost);
-console.log('   - Environment:', isProduction ? 'PRODUCTION' : 'DEVELOPMENT');
-console.log('🔧 Using App ID:', currentConfig.appId);
+console.log("🌍 Environment:", isProduction ? "PRODUCTION" : "DEVELOPMENT");
+console.log("🔧 Using App ID:", currentConfig.appId);
 
 function App() {
-  // ✅ Prevent double initialization dengan useRef
   const oneSignalInitialized = useRef(false);
 
   useEffect(() => {
-    async function runOneSignal() {
-      // ✅ Cek jika sudah diinisialisasi
+    async function initOneSignal() {
       if (oneSignalInitialized.current) {
-        console.log("⚠️ OneSignal already initialized, skipping...");
+        console.log("⚠️ OneSignal already initialized, skipping");
         return;
       }
 
-      try {
-        oneSignalInitialized.current = true;
+      oneSignalInitialized.current = true;
 
+      try {
         console.log("🚀 Initializing OneSignal...");
 
-        // ✅ Konfigurasi yang benar untuk Vercel
         await OneSignal.init({
           appId: currentConfig.appId,
           allowLocalhostAsSecureOrigin: true,
-          
-          // ✅ Path untuk Service Worker (tanpa leading slash)
-          serviceWorkerParam: { 
-            scope: '/' 
-          },
           serviceWorkerPath: currentConfig.serviceWorkerPath,
-          
-          // ✅ Notifikasi otomatis
-          notifyButton: {
-            enable: false, // Set true jika ingin tombol subscribe
-          },
+          serviceWorkerParam: { scope: "/" },
+          notifyButton: { enable: false },
         });
 
-        console.log("✅ OneSignal initialized successfully");
+        console.log("✅ OneSignal initialized");
 
-        // Check if notifications are supported
+        // -----------------------------------------------------
+        // 1️⃣ CEK SUPPORT
+        // -----------------------------------------------------
         if (!OneSignal.Notifications.isPushSupported()) {
-          console.error("❌ Push notifications are not supported");
+          console.error("❌ Browser tidak mendukung push notification");
           return;
         }
 
-        // Check current permission status
-        const currentPermission = OneSignal.Notifications.permission;
-        console.log("📋 Current permission:", currentPermission);
+        // -----------------------------------------------------
+        // 2️⃣ IZIN NOTIFIKASI
+        // -----------------------------------------------------
+        const permission = OneSignal.Notifications.permission;
+        console.log("📋 Notification permission:", permission);
 
-        // Request permission if not already granted
-        if (currentPermission !== "granted") {
-          console.log("🔔 Requesting notification permission...");
-          
-          // ✅ Tambahkan user interaction sebelum request permission
-          const permission = await OneSignal.Notifications.requestPermission();
-          console.log("✅ Permission result:", permission);
-          
-          if (!permission) {
-            console.warn("⚠️ User denied notification permission");
-            return;
-          }
+        if (permission !== "granted") {
+          console.log("🔔 Requesting permission...");
+          const granted = await OneSignal.Notifications.requestPermission();
+          console.log("Permission result:", granted);
+          if (!granted) return;
         }
 
-        // Small delay to ensure SDK is fully ready
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        // Check if user is subscribed
+        // -----------------------------------------------------
+        // 3️⃣ OPT-IN JIKA BELUM SUBSCRIBE
+        // -----------------------------------------------------
         const isSubscribed = await OneSignal.User.PushSubscription.optedIn;
-        console.log("📬 Is subscribed:", isSubscribed);
+        console.log("📬 isSubscribed:", isSubscribed);
 
-        // Subscribe if not already subscribed
         if (!isSubscribed) {
-          console.log("📲 Subscribing user...");
+          console.log("📲 Opting in user...");
           await OneSignal.User.PushSubscription.optIn();
-          console.log("✅ User opted in to push notifications");
-          
-          // Wait for subscription to complete
-          await new Promise(resolve => setTimeout(resolve, 2000));
         }
 
-        // Get subscription ID (Player ID) - dengan retry
-        let subscriptionId = null;
-        let retries = 0;
-        const maxRetries = 10;
-
-        console.log("🔍 Getting subscription ID...");
-
-        while (!subscriptionId && retries < maxRetries) {
-          subscriptionId = OneSignal.User.PushSubscription.id;
-          
-          if (!subscriptionId) {
-            console.log(`⏳ Waiting for subscription ID... (attempt ${retries + 1}/${maxRetries})`);
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            retries++;
-          }
+        // -----------------------------------------------------
+        // 4️⃣ DAPATKAN PLAYER ID DENGAN RETRY (10X)
+        // -----------------------------------------------------
+        let playerId = null;
+        for (let i = 0; i < 10; i++) {
+          playerId = OneSignal.User.PushSubscription.id;
+          if (playerId) break;
+          console.log(`⏳ Waiting for Player ID... (${i + 1}/10)`);
+          await new Promise((r) => setTimeout(r, 1000));
         }
 
-        if (subscriptionId) {
-          console.log("🎯 ✅ Subscription ID (Player ID):", subscriptionId);
-          // Simpan ke localStorage untuk backup
-          localStorage.setItem('onesignal_player_id', subscriptionId);
+        if (!playerId) {
+          console.error("❌ Failed to obtain Player ID");
         } else {
-          console.error("❌ Could not get subscription ID after", maxRetries, "attempts");
-          console.log("💡 Possible reasons:");
-          console.log("   1. User blocked notifications");
-          console.log("   2. Domain not configured in OneSignal dashboard");
-          console.log("   3. Service worker registration failed");
-          
-          // Debug info
-          console.log("🔍 Debug Info:");
-          console.log("   - Permission:", OneSignal.Notifications.permission);
-          console.log("   - Opted In:", await OneSignal.User.PushSubscription.optedIn);
-          console.log("   - Token:", OneSignal.User.PushSubscription.token);
+          console.log("🎯 Player ID:", playerId);
+
+          // SIMPAN LOKAL
+          localStorage.setItem("onesignal_player_id", playerId);
+
+          // -----------------------------------------------------
+          // 5️⃣ LOGIN UNTUK MENSTABILKAN PLAYER ID
+          // -----------------------------------------------------
+          await OneSignal.login(playerId);
+          console.log("🔐 OneSignal login() success");
         }
 
-        // Get OneSignal User ID
-        const userId = OneSignal.User.onesignalId;
-        console.log("🆔 OneSignal User ID:", userId);
-
-        // Debug: Log full subscription object
-        console.log("📊 Full PushSubscription object:", {
-          id: OneSignal.User.PushSubscription.id,
-          token: OneSignal.User.PushSubscription.token,
-          optedIn: await OneSignal.User.PushSubscription.optedIn
-        });
-
-        // Listen for subscription changes
-        OneSignal.User.PushSubscription.addEventListener("change", (event) => {
+        // -----------------------------------------------------
+        // 6️⃣ LISTENER — Saat Player ID berganti
+        // -----------------------------------------------------
+        OneSignal.User.PushSubscription.addEventListener("change", async (event) => {
           console.log("🔄 Subscription changed:", event);
-          const newId = event.current.id;
-          console.log("🎯 New subscription ID:", newId);
+
+          const newId = event.current?.id;
           if (newId) {
-            localStorage.setItem('onesignal_player_id', newId);
+            console.log("🆕 New Player ID:", newId);
+            localStorage.setItem("onesignal_player_id", newId);
+
+            await OneSignal.login(newId);
+            console.log("🔐 User re-logged with new Player ID");
           }
         });
 
-        // Listen for notification clicks
+        // -----------------------------------------------------
+        // 7️⃣ NOTIFIKASI SAAT TAB AKTIF
+        // -----------------------------------------------------
+        OneSignal.Notifications.addEventListener("foregroundWillDisplay", (event) => {
+          console.log("📬 Foreground notification:", event.notification);
+        });
+
         OneSignal.Notifications.addEventListener("click", (event) => {
           console.log("👆 Notification clicked:", event);
         });
 
-        // ✅ PENTING: Handle notifikasi saat tab aktif (foreground)
-        OneSignal.Notifications.addEventListener("foregroundWillDisplay", (event) => {
-          console.log("📬 Notification received (foreground):", event.notification);
-          // Notifikasi akan tetap muncul karena tidak ada preventDefault()
-        });
-
-        // Optional: Send a test tag
-        await OneSignal.User.addTag("app_user", "true");
+        // -----------------------------------------------------
+        // 8️⃣ TAGS UNTUK DEBUG
+        // -----------------------------------------------------
         await OneSignal.User.addTag("environment", isProduction ? "production" : "development");
-        console.log("✅ User tags added");
+        await OneSignal.User.addTag("app_user", "true");
 
       } catch (error) {
-        console.error("❌ Error initializing OneSignal:", error);
-        console.error("Error details:", error.message);
-        
-        // Reset flag jika error
+        console.error("❌ OneSignal Initialization Error:", error);
         oneSignalInitialized.current = false;
       }
     }
 
-    runOneSignal();
-  }, []); // Empty dependency array
+    initOneSignal();
+  }, []);
 
   return (
     <>
