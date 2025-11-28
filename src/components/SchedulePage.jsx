@@ -45,7 +45,7 @@ export default function SchedulePage() {
   const [todayCurrentActivity, setTodayCurrentActivity] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [playerId, setPlayerId] = useState(null); // ✅ State untuk Player ID
+  const [playerId, setPlayerId] = useState(null);
 
   const [isPremium, setIsPremium] = useState(() => {
     try {
@@ -73,7 +73,7 @@ export default function SchedulePage() {
     const getPlayerId = async () => {
       try {
         // Tunggu sampai OneSignal terinisialisasi
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 3000));
         
         const subscriptionId = OneSignal.User.PushSubscription.id;
         
@@ -82,6 +82,13 @@ export default function SchedulePage() {
           setPlayerId(subscriptionId);
         } else {
           console.warn("⚠️ Player ID tidak ditemukan. User mungkin belum subscribe.");
+          
+          // Coba ambil dari localStorage sebagai fallback
+          const savedPlayerId = localStorage.getItem('onesignal_player_id');
+          if (savedPlayerId) {
+            console.log("📦 Menggunakan Player ID dari localStorage:", savedPlayerId);
+            setPlayerId(savedPlayerId);
+          }
         }
       } catch (error) {
         console.error("❌ Error mendapatkan Player ID:", error);
@@ -91,15 +98,23 @@ export default function SchedulePage() {
     getPlayerId();
   }, []);
 
-  // ✅ Fungsi schedule dengan Player ID
+  // ✅ Fungsi schedule dengan validasi yang lebih baik
   const scheduleNewReminder = useCallback(
     async (title, content, deliveryTime) => {
       try {
+        // ✅ CRITICAL FIX: Pastikan deliveryTime adalah string
+        const deliveryTimeStr = typeof deliveryTime === 'string' 
+          ? deliveryTime 
+          : deliveryTime.toISOString 
+            ? deliveryTime.toISOString() 
+            : String(deliveryTime);
+
         console.log("📤 Sending notification:", {
           title,
           content,
-          deliveryTime,
-          playerId, // Log Player ID
+          deliveryTime: deliveryTimeStr,
+          deliveryTimeType: typeof deliveryTimeStr,
+          playerId,
         });
 
         // ✅ Validasi Player ID
@@ -117,8 +132,8 @@ export default function SchedulePage() {
           body: JSON.stringify({
             title: title,
             content: content,
-            deliveryTime: deliveryTime,
-            userId: playerId, // ✅ Kirim Player ID
+            deliveryTime: deliveryTimeStr, // ✅ Kirim sebagai string
+            userId: playerId,
           }),
         });
 
@@ -129,7 +144,7 @@ export default function SchedulePage() {
           alert(
             `✅ Reminder successfully scheduled!\n\n` +
             `📌 Activity: ${title}\n` +
-            `🕐 Time: ${deliveryTime}\n` +
+            `🕐 Time: ${deliveryTimeStr}\n` +
             `👥 Recipients: ${data.recipients || 'All subscribers'}`
           );
         } else {
@@ -144,7 +159,7 @@ export default function SchedulePage() {
         alert(`❌ Network Error: ${error.message}`);
       }
     },
-    [playerId], // ✅ Tambahkan playerId ke dependency
+    [playerId],
   );
 
   useEffect(() => {
